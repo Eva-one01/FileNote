@@ -83,6 +83,8 @@ interface State {
   select(id: string | null): Promise<void>;
   createNote(opts?: { title?: string; folderId?: string | null; tags?: string[]; select?: boolean; content?: JSONContent; template?: boolean; daily?: string }): Promise<Note>;
   openDaily(): Promise<void>;
+  /** Guarda el documento de una nota sin abrirla (vista Tareas). */
+  saveContent(id: string, content: JSONContent): Promise<void>;
   newFromTemplate(tpl: Template): Promise<void>;
   saveAsTemplate(id: string): Promise<void>;
   updateCurrent(patch: Partial<Pick<Note, 'title' | 'content' | 'text' | 'tags' | 'folderId' | 'pinned'>>): void;
@@ -141,6 +143,18 @@ export const useStore = create<State>((set, get) => ({
     if (first) await get().select(first.id);
   },
 
+  async saveContent(id, content) {
+    if (get().current?.id === id) {
+      get().updateCurrent({ content, text: textOf(content) });
+      return get().flush();
+    }
+    const n = await api.notes.get(id);
+    if (!n) return;
+    const next: Note = { ...n, content, text: textOf(content), links: linksIn(content), updatedAt: Date.now() };
+    await api.notes.save(next);
+    set((s) => ({ notes: s.notes.map((m) => (m.id === id ? toMeta(next) : m)) }));
+  },
+
   async refresh(selectId) {
     const notes = await api.notes.list();
     set({ notes });
@@ -156,6 +170,8 @@ export const useStore = create<State>((set, get) => ({
 
   async select(id) {
     await get().flush();
+    // Tareas y Grafo ocupan el sitio del editor: al abrir una nota se vuelve a la lista.
+    if (id && (get().view.kind === 'tasks' || get().view.kind === 'graph')) set({ view: { kind: 'all' } });
     if (!id) return set({ selectedId: null, current: null });
     const n = await api.notes.get(id);
     set({ selectedId: id, current: n });
@@ -183,7 +199,7 @@ export const useStore = create<State>((set, get) => ({
     await api.notes.save(note);
     set((s) => ({ notes: [toMeta(note), ...s.notes], ...(opts.select === false ? {} : { selectedId: note.id, current: note }) }));
     // Desde la papelera no se ve la nota nueva: se vuelve a «Todas».
-    if (v.kind === 'trash' && opts.select !== false) set({ view: { kind: 'all' } });
+    if ((v.kind === 'trash' || v.kind === 'tasks' || v.kind === 'graph') && opts.select !== false) set({ view: { kind: 'all' } });
     return note;
   },
 

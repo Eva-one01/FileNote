@@ -24,6 +24,8 @@ const STEPS: Step[] = [
   { id: 'toolbar', target: 'toolbar', title: 'tour.toolbarT', body: 'tour.toolbarB' },
   { id: 'search', target: 'search', title: 'tour.searchT', body: 'tour.searchB', key: 'Ctrl+K' },
   { id: 'today', target: 'today', title: 'tour.todayT', body: 'tour.todayB', key: 'Ctrl+Shift+J' },
+  { id: 'tasks', target: 'tasks', title: 'tour.tasksT', body: 'tour.tasksB' },
+  { id: 'graph', target: 'graph', title: 'tour.graphT', body: 'tour.graphB' },
   { id: 'templates', target: 'templates', title: 'tour.tplT', body: 'tour.tplB' },
   { id: 'capture', target: 'settings', title: 'tour.capT', body: 'tour.capB', key: 'Ctrl+Alt+N' },
   { id: 'done', title: 'tour.doneT', body: 'tour.doneB' },

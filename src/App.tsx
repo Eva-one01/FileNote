@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { TitleBarUpdate, UpdateBanner } from '@/components/UpdateBanner';
 import { CommandPalette } from './components/CommandPalette';
 import { Tour } from './components/Tour';
+import { GraphPane } from './components/GraphPane';
+import { TasksPane } from './components/TasksPane';
 import { NoteEditor } from './components/NoteEditor';
 import { NoteList } from './components/NoteList';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -64,6 +66,7 @@ function Toast() {
 export function App() {
   const ready = useStore((s) => s.ready);
   const focus = useStore((s) => s.focus);
+  const view = useStore((s) => s.view);
   const [settings, setSettings] = useState(false);
   useAppearance();
 
@@ -127,8 +130,16 @@ export function App() {
       ) : null}
       <div className={`app${focus ? ' focus' : ''}`} style={isDesktop ? ({ '--titlebar': '34px' } as React.CSSProperties) : undefined}>
         <Sidebar onSettings={() => setSettings(true)} />
-        <NoteList />
-        <NoteEditor />
+        {view.kind === 'tasks' ? (
+          <TasksPane />
+        ) : view.kind === 'graph' ? (
+          <GraphPane />
+        ) : (
+          <>
+            <NoteList />
+            <NoteEditor />
+          </>
+        )}
       </div>
       <CommandPalette />
       <UpdateBanner />

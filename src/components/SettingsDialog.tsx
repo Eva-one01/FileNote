@@ -1,4 +1,5 @@
-import { FolderOpen, X } from 'lucide-react';
+import { FileDown, FolderInput, FolderOpen, X } from 'lucide-react';
+import { importBundle } from '@/lib/importer';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, type AutoBackup, type DesktopPrefs } from '@/lib/api';
@@ -101,6 +102,44 @@ function QuickCapture() {
       <p className="set-hint" style={{ marginTop: 6 }}>
         {t('cap.trayHint')}
       </p>
+    </div>
+  );
+}
+
+function ImportNotes({ onClose }: { onClose: () => void }) {
+  const { t } = useT();
+  const imp = api.importer;
+  const [busy, setBusy] = useState<string | null>(null);
+  if (!imp) return null;
+  const run = async (kind: 'folder' | 'files') => {
+    const bundle = await imp.pick(kind);
+    if (!bundle) return;
+    if (!bundle.files.length) return useStore.getState().showToast(t('imp.none'));
+    setBusy(t('imp.progress', { n: 0, total: bundle.files.length }));
+    try {
+      const r = await importBundle(bundle, (n, total) => setBusy(t('imp.progress', { n, total })));
+      useStore.getState().showToast(t('imp.done', { n: r.notes, a: r.attachments }));
+      if (r.folderId) useStore.getState().setView({ kind: 'folder', id: r.folderId });
+      onClose();
+    } catch {
+      useStore.getState().showToast(t('imp.failed'));
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div className="set-section">
+      <h4>{t('imp.title')}</h4>
+      <p className="set-hint">{t('imp.hint')}</p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button className="btn btn-soft btn-sm" disabled={!!busy} onClick={() => void run('folder')}>
+          <FolderInput size={14} /> {t('imp.folder')}
+        </button>
+        <button className="btn btn-soft btn-sm" disabled={!!busy} onClick={() => void run('files')}>
+          <FileDown size={14} /> {t('imp.files')}
+        </button>
+        {busy ? <span className="set-hint tabular" style={{ margin: 0 }}>{busy}</span> : null}
+      </div>
     </div>
   );
 }
@@ -303,6 +342,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             {t('tour.start')}
           </button>
         </div>
+        <ImportNotes onClose={onClose} />
         <QuickCapture />
         <Backups />
         <Privacy />

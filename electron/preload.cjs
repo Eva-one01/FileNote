@@ -68,6 +68,10 @@ contextBridge.exposeInMainWorld('filenote', {
     done: (id) => ipcRenderer.send('fn:cap:done', id ? String(id) : null),
     close: () => ipcRenderer.send('fn:cap:close'),
   },
+  importer: {
+    pick: (kind) => inv('fn:imp:pick', kind === 'files' ? 'files' : 'folder'),
+    asset: (rel) => inv('fn:imp:asset', String(rel)),
+  },
   prefs: {
     get: () => inv('fn:prefs:get'),
     set: (p) => inv('fn:prefs:set', p),

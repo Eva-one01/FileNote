@@ -25,6 +25,7 @@ const store = require('./store.cjs');
 const updater = require('./updater.cjs');
 const backups = require('./backups.cjs');
 const prefs = require('./prefs.cjs');
+const importer = require('./importer.cjs');
 const DIST = path.join(__dirname, '..', 'dist');
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -367,6 +368,8 @@ function registerIpc() {
   ipcMain.on('fn:cap:close', () => {
     if (capWin && !capWin.isDestroyed()) capWin.hide();
   });
+  ipcMain.handle('fn:imp:pick', (_e, kind) => importer.pick(win, kind === 'files' ? 'files' : 'folder'));
+  ipcMain.handle('fn:imp:asset', (_e, rel) => importer.asset(rel, mimeOf(String(rel))));
   ipcMain.handle('fn:prefs:get', () => ({ ...prefs.get(), keyOk }));
   ipcMain.handle('fn:prefs:set', (_e, p) => {
     prefs.set(p);

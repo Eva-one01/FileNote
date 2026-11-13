@@ -59,4 +59,6 @@ export type View =
   | { kind: 'folder'; id: string }
   | { kind: 'tag'; tag: string }
   | { kind: 'trash' }
-  | { kind: 'templates' };
+  | { kind: 'templates' }
+  | { kind: 'tasks' }
+  | { kind: 'graph' };

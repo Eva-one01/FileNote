@@ -42,6 +42,11 @@ export interface FileNoteBridge {
   app?: { version(): Promise<string> };
   /** Avisos del proceso principal a la ventana. */
   events?: { on(cb: (ev: AppEvent) => void): () => void };
+  /** Importar notas Markdown (Obsidian, Notion…). */
+  importer?: {
+    pick(kind: 'folder' | 'files'): Promise<ImportBundle | null>;
+    asset(rel: string): Promise<{ url: string; name: string; size: number; mime: string } | null>;
+  };
   /** Ventana de captura rápida. */
   capture?: { done(id: string | null): void; close(): void };
   /** Preferencias que lee el proceso principal (atajo global, bandeja). */
@@ -65,6 +70,12 @@ export interface FileNoteBridge {
     restore(name: string): Promise<boolean>;
     openFolder(): Promise<string>;
   };
+}
+
+export interface ImportBundle {
+  name: string;
+  files: { rel: string; text: string; mtime: number; ctime: number }[];
+  assets: string[];
 }
 
 export type AppEvent = { type: 'notes-changed'; select?: string } | { type: 'daily' } | { type: 'new-note' };

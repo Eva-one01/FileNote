@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight, FileText, LayoutTemplate, Folder, FolderOpen, FolderPlus, Hash, Pencil, Pin, Search, Settings2, Trash2 } from 'lucide-react';
+import { CalendarDays, ChevronRight, FileText, LayoutTemplate, ListChecks, Waypoints, Folder, FolderOpen, FolderPlus, Hash, Pencil, Pin, Search, Settings2, Trash2 } from 'lucide-react';
 import { useMemo, useState, type DragEvent } from 'react';
 import { useT } from '@/lib/i18n';
 import { allTags, tagColor, useStore } from '@/lib/store';
@@ -180,6 +180,8 @@ export function Sidebar({ onSettings }: { onSettings: () => void }) {
           <CalendarDays size={17} />
           <span className="name">{t('daily.today')}</span>
         </button>
+        <NavItem tour="tasks" view={{ kind: 'tasks' }} label={t('tasks.title')} icon={<ListChecks size={17} />} />
+        <NavItem tour="graph" view={{ kind: 'graph' }} label={t('graph.title')} icon={<Waypoints size={17} />} />
         <NavItem view={{ kind: 'pinned' }} label={t('nav.pinned')} count={live.filter((n) => n.pinned).length} icon={<Pin size={17} />} drop={(id) => void st().patchNote(id, { pinned: true })} />
 
         <div className="side-section">
