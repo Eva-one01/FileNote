@@ -36,7 +36,7 @@ export function DialogHost() {
     else req.resolve(v && value.trim() ? value.trim() : null);
   };
   return createPortal(
-    <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && close(false)} onKeyDown={(e) => e.key === 'Escape' && close(false)}>
+    <div className="scrim scrim-top" onMouseDown={(e) => e.target === e.currentTarget && close(false)} onKeyDown={(e) => e.key === 'Escape' && close(false)}>
       <form
         className="dialog"
         role="dialog"

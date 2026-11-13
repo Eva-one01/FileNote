@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="100" y="100" width="824" height="824" rx="190" fill="#0B0B0C"/>
+  <!-- Hoja con la esquina doblada -->
+  <path d="M362 262h214l146 146v312a42 42 0 0 1-42 42H362a42 42 0 0 1-42-42V304a42 42 0 0 1 42-42Z" fill="none" stroke="#F2F2F0" stroke-width="64" stroke-linejoin="round"/>
+  <path d="M566 270v148h148" fill="none" stroke="#F2F2F0" stroke-width="64" stroke-linejoin="round"/>
+  <!-- Líneas de texto en el color de acento -->
+  <path d="M414 548h208M414 650h136" stroke="#7B93FF" stroke-width="64" stroke-linecap="round"/>
+</svg>

@@ -39,6 +39,45 @@ export interface FileNoteBridge {
   window: {
     setTheme(dark: boolean): void;
   };
+  app?: { version(): Promise<string> };
+  updates?: {
+    get(): Promise<UpdateState>;
+    check(): Promise<UpdateState>;
+    install(opts?: { visible?: boolean }): void;
+    dismiss(): void;
+    download(): void;
+    onChange(cb: (s: UpdateState) => void): () => void;
+  };
+  errorReports?: {
+    report(p: { kind?: string; name?: string; message: string; stack?: string; source?: string }): void;
+    get(): Promise<{ enabled: boolean; available: boolean }>;
+    set(v: boolean): Promise<{ enabled: boolean; available: boolean }>;
+    test(): Promise<{ ok: boolean }>;
+  };
+  backups?: {
+    list(): Promise<AutoBackup[]>;
+    restore(name: string): Promise<boolean>;
+    openFolder(): Promise<string>;
+  };
+}
+
+export type UpdateStatus = 'idle' | 'disabled' | 'checking' | 'none' | 'available' | 'downloading' | 'ready' | 'installing' | 'error';
+export interface UpdateState {
+  status: UpdateStatus;
+  current: string;
+  version?: string;
+  progress?: number;
+  manual?: boolean;
+  downloaded?: boolean;
+  updatedTo?: string;
+  failedTo?: string;
+}
+
+export interface AutoBackup {
+  name: string;
+  kind: 'daily' | 'safety';
+  savedAt: number;
+  count: number | null;
 }
 
 declare global {
@@ -135,3 +174,13 @@ const devBridge: FileNoteBridge = {
 
 export const api: FileNoteBridge = typeof window !== 'undefined' && window.filenote ? window.filenote : devBridge;
 export const isDesktop = typeof window !== 'undefined' && !!window.filenote;
+
+// Errores de la interfaz → informes de errores (el proceso principal decide si se envían).
+if (typeof window !== 'undefined' && window.filenote?.errorReports) {
+  const rep = window.filenote.errorReports;
+  window.addEventListener('error', (e) => rep.report({ kind: 'error', name: e.error?.name, message: e.message, stack: e.error?.stack, source: `${e.filename}:${e.lineno}:${e.colno}` }));
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason as { name?: string; message?: string; stack?: string } | undefined;
+    rep.report({ kind: 'unhandledrejection', name: r?.name, message: String(r?.message ?? r), stack: r?.stack });
+  });
+}

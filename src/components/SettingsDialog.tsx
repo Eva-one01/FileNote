@@ -1,6 +1,10 @@
-import { X } from 'lucide-react';
+import { FolderOpen, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { api, type AutoBackup } from '@/lib/api';
 import { LANGS, useT } from '@/lib/i18n';
+import { confirmDialog } from './ui';
+import { useUpdates } from './UpdateBanner';
 import { useStore } from '@/lib/store';
 import type { AccentId, Lang, SizePref, ThemePref } from '@/types';
 
@@ -51,13 +55,134 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
+function Backups() {
+  const { t, lang } = useT();
+  const [list, setList] = useState<AutoBackup[] | null>(null);
+  const b = api.backups;
+  useEffect(() => {
+    void b?.list().then(setList);
+  }, [b]);
+  if (!b) return null;
+  const fmt = (ts: number) => new Date(ts).toLocaleString(lang, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const restore = async (x: AutoBackup) => {
+    const ok = await confirmDialog({ title: t('set.restoreQ'), body: t('set.restoreBody', { d: fmt(x.savedAt) }), ok: t('set.restore') });
+    if (!ok) return;
+    await useStore.getState().flush();
+    if (await b.restore(x.name)) {
+      // Se cierra la nota abierta para que el editor se monte de nuevo con el contenido restaurado.
+      useStore.setState({ selectedId: null, current: null });
+      await new Promise((r) => setTimeout(r, 0));
+      await useStore.getState().load();
+      useStore.getState().showToast(t('set.restored'));
+      setList(await b.list());
+    }
+  };
+  return (
+    <div className="set-section">
+      <h4>{t('set.backups')}</h4>
+      <p className="set-hint">{t('set.backupsHint')}</p>
+      {list && list.length ? (
+        <div className="bak-list">
+          {list.map((x) => (
+            <div className="bak-row" key={x.name}>
+              <span className="when">{fmt(x.savedAt)}</span>
+              <span className="meta">
+                {x.kind === 'safety' ? `${t('set.safety')} · ` : ''}
+                {x.count != null ? t(x.count === 1 ? 'set.note1' : 'set.notesN', { n: x.count }) : ''}
+              </span>
+              <button className="btn btn-soft btn-sm" onClick={() => void restore(x)}>
+                {t('set.restore')}
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="set-hint">{t('set.backupsNone')}</p>
+      )}
+      <button className="btn btn-soft btn-sm" onClick={() => void b.openFolder()}>
+        <FolderOpen size={14} /> {t('set.openFolder')}
+      </button>
+    </div>
+  );
+}
+
+function Privacy() {
+  const { t } = useT();
+  const r = api.errorReports;
+  const [st, setSt] = useState<{ enabled: boolean; available: boolean } | null>(null);
+  useEffect(() => {
+    void r?.get().then(setSt);
+  }, [r]);
+  if (!r || !st || !st.available) return null; // Sin DSN de Sentry configurado no se muestra.
+  return (
+    <div className="set-section">
+      <h4>{t('set.privacy')}</h4>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontWeight: 700 }}>
+        <input type="checkbox" checked={st.enabled} onChange={async (e) => setSt(await r.set(e.target.checked))} style={{ width: 18, height: 18, accentColor: 'var(--accent)' }} />
+        {t('set.errors')}
+      </label>
+      <p className="set-hint" style={{ marginTop: 6 }}>
+        {t('set.errorsHint')}
+      </p>
+      {st.enabled && st.available ? (
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={async () => {
+            await r.test();
+            useStore.getState().showToast(t('set.testSent'));
+          }}
+        >
+          {t('set.testError')}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function About() {
+  const { t } = useT();
+  const st = useUpdates();
+  const [version, setVersion] = useState('');
+  const [asked, setAsked] = useState(false);
+  useEffect(() => {
+    void api.app?.version().then(setVersion);
+  }, []);
+  const u = api.updates;
+  if (!u) return null;
+  const line = !asked || !st ? '' : st.status === 'checking' ? t('upd.checking') : st.status === 'none' ? t('upd.none') : st.status === 'error' ? t('upd.error') : st.status === 'disabled' ? t('upd.disabled') : st.status === 'downloading' ? t('upd.downloading', { v: st.version ?? '', p: st.progress ?? 0 }) : st.status === 'ready' ? t('upd.ready', { v: st.version ?? '' }) : st.status === 'available' ? t('upd.available', { v: st.version ?? '' }) : '';
+  return (
+    <div className="set-section">
+      <h4>{t('set.about')}</h4>
+      <p className="set-hint">FileNote · {t('set.version', { v: version || st?.current || '' })}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <button
+          className="btn btn-soft btn-sm"
+          disabled={st?.status === 'checking'}
+          onClick={() => {
+            setAsked(true);
+            void u.check();
+          }}
+        >
+          {t('set.check')}
+        </button>
+        {line ? <span className="set-hint" style={{ margin: 0 }}>{line}</span> : null}
+        {asked && st && (st.status === 'ready' || st.status === 'available') ? (
+          <button className="btn btn-primary btn-sm" onClick={() => u.install()}>
+            {st.status === 'ready' ? t('upd.install') : t('upd.download')}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function SettingsDialog({ onClose }: { onClose: () => void }) {
   const { t } = useT();
   const s = useStore((x) => x.settings);
   const set = useStore((x) => x.setSettings);
   return createPortal(
     <div className="scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()} onKeyDown={(e) => e.key === 'Escape' && onClose()}>
-      <div className="dialog" role="dialog" aria-label={t('set.title')} style={{ width: 'min(480px, calc(100vw - 32px))' }}>
+      <div className="dialog" role="dialog" aria-label={t('set.title')} style={{ width: 'min(520px, calc(100vw - 32px))', maxHeight: 'calc(82vh - 24px)', overflow: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <h3 style={{ flex: 1, margin: 0 }}>{t('set.title')}</h3>
           <button className="icon-btn" aria-label={t('set.close')} onClick={onClose} autoFocus>
@@ -112,6 +237,9 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <input type="checkbox" checked={s.spellcheck} onChange={(e) => set({ spellcheck: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--accent)' }} />
           {t('set.spellcheck')}
         </label>
+        <Backups />
+        <Privacy />
+        <About />
       </div>
     </div>,
     document.body,

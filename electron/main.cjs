@@ -17,7 +17,13 @@ const BG = { light: '#F6F6F4', dark: '#0A0A0B' };
 app.setPath('userData', path.join(app.getPath('appData'), 'FileNote'));
 app.setAppUserModelId('com.felipefranco.razor.filenote');
 
+// Informes de errores (Sentry): justo después de fijar la carpeta de datos, antes de que la app esté lista.
+const errors = require('./errors.cjs');
+errors.init();
+
 const store = require('./store.cjs');
+const updater = require('./updater.cjs');
+const backups = require('./backups.cjs');
 const DIST = path.join(__dirname, '..', 'dist');
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -124,6 +130,7 @@ function createWindow() {
   });
   win.loadURL(`${ORIGIN}/`);
   win.once('ready-to-show', () => win.show());
+  win.on('focus', () => updater.checkIfStale());
   win.on('close', () => {
     quitting = true;
   });
@@ -198,6 +205,23 @@ function registerIpc() {
   ipcMain.handle('fn:files:saveAs', (_e, name, data, filters) => saveAs(name, data, filters));
   ipcMain.handle('fn:files:pdf', (_e, name, html) => toPdf(name, html));
 
+  ipcMain.handle('fn:app:version', () => app.getVersion());
+
+  ipcMain.handle('fn:upd:get', () => updater.get());
+  ipcMain.handle('fn:upd:check', () => updater.check());
+  ipcMain.on('fn:upd:install', (_e, opts) => updater.install({ visible: !!(opts && opts.visible) }));
+  ipcMain.on('fn:upd:dismiss', () => updater.dismiss());
+  ipcMain.on('fn:upd:download', () => updater.openDownloads());
+
+  ipcMain.on('fn:err:report', (_e, p) => errors.report(p));
+  ipcMain.handle('fn:err:get', () => errors.get());
+  ipcMain.handle('fn:err:set', (_e, v) => errors.setEnabled(!!v));
+  ipcMain.handle('fn:err:test', () => errors.test());
+
+  ipcMain.handle('fn:bak:list', () => backups.list());
+  ipcMain.handle('fn:bak:restore', (_e, name) => backups.restore(name));
+  ipcMain.handle('fn:bak:open', () => backups.openFolder());
+
   ipcMain.on('fn:theme', (_e, dark) => {
     if (!win) return;
     win.setBackgroundColor(dark ? BG.dark : BG.light);
@@ -214,6 +238,15 @@ function start() {
   registerProtocol();
   registerIpc();
   createWindow();
+  backups.start();
+  updater.init(
+    (st) => {
+      if (win && !win.isDestroyed()) win.webContents.send('fn:upd:state', st);
+    },
+    () => {
+      quitting = true;
+    },
+  );
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
     else win?.show();
@@ -222,6 +255,7 @@ function start() {
 
 app.on('before-quit', () => {
   quitting = true;
+  updater.noteQuit();
 });
 app.on('window-all-closed', () => {
   if (!IS_MAC || quitting) app.quit();

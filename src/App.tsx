@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { UpdateBanner } from '@/components/UpdateBanner';
 import { CommandPalette } from './components/CommandPalette';
 import { NoteEditor } from './components/NoteEditor';
 import { NoteList } from './components/NoteList';
@@ -110,6 +111,7 @@ export function App() {
         <NoteEditor />
       </div>
       <CommandPalette />
+      <UpdateBanner />
       <DialogHost />
       <MenuHost />
       <Toast />

@@ -24,6 +24,36 @@ contextBridge.exposeInMainWorld('filenote', {
     saveAs: (name, data, filters) => inv('fn:files:saveAs', String(name), data, filters),
     pdf: (name, html) => inv('fn:files:pdf', String(name), String(html)),
   },
+  app: {
+    version: () => inv('fn:app:version'),
+  },
+  updates: {
+    get: () => inv('fn:upd:get'),
+    check: () => inv('fn:upd:check'),
+    install: (opts) => ipcRenderer.send('fn:upd:install', opts && opts.visible ? { visible: true } : {}),
+    dismiss: () => ipcRenderer.send('fn:upd:dismiss'),
+    download: () => ipcRenderer.send('fn:upd:download'),
+    onChange: (cb) => {
+      const h = (_e, st) => cb(st);
+      ipcRenderer.on('fn:upd:state', h);
+      return () => ipcRenderer.removeListener('fn:upd:state', h);
+    },
+  },
+  errorReports: {
+    report: (p) => {
+      try {
+        ipcRenderer.send('fn:err:report', { kind: String((p && p.kind) || 'error'), name: p && p.name ? String(p.name) : undefined, message: String((p && p.message) || ''), stack: p && p.stack ? String(p.stack) : undefined, source: p && p.source ? String(p.source) : undefined });
+      } catch {}
+    },
+    get: () => inv('fn:err:get'),
+    set: (v) => inv('fn:err:set', !!v),
+    test: () => inv('fn:err:test'),
+  },
+  backups: {
+    list: () => inv('fn:bak:list'),
+    restore: (name) => inv('fn:bak:restore', String(name)),
+    openFolder: () => inv('fn:bak:open'),
+  },
   window: {
     setTheme: (dark) => ipcRenderer.send('fn:theme', !!dark),
   },
