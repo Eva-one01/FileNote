@@ -21,7 +21,7 @@ function writeAtomic(file, text) {
 
 function snapshot() {
   const notes = store.list().map((m) => store.get(m.id)).filter(Boolean);
-  return { app: 'FileNote', version: 1, savedAt: new Date().toISOString(), count: notes.length, notes, folders: store.listFolders() };
+  return { app: 'FileNote', version: 1, savedAt: new Date().toISOString(), count: notes.length, notes, folders: store.listFolders(), decks: store.getDecks() };
 }
 
 function prune() {
@@ -87,6 +87,7 @@ function restore(name) {
   for (const m of store.list()) store.remove(m.id);
   for (const n of snap.notes) store.save(n);
   store.saveFolders(Array.isArray(snap.folders) ? snap.folders : []);
+  if (snap.decks && Array.isArray(snap.decks.decks)) store.saveDecks(snap.decks);
   prune();
   return true;
 }

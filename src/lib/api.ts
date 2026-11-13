@@ -23,6 +23,7 @@ export interface FileNoteBridge {
     save(folders: Folder[]): Promise<boolean>;
   };
   study?: { get(): Promise<StudyData>; save(d: StudyData): Promise<boolean> };
+  decks?: { get(): Promise<DeckData>; save(d: DeckData): Promise<boolean> };
   annotations?: { get(url: string): Promise<PdfHighlight[]>; save(url: string, list: PdfHighlight[]): Promise<boolean> };
   attachments: {
     /** Guarda los bytes de un archivo (pegado o arrastrado). */
@@ -99,6 +100,25 @@ export interface CardState {
   last: number;
 }
 export type StudyData = Record<string, CardState>;
+
+/** Mazos y tarjetas creados desde «Estudiar». */
+export interface StudyDeck {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: number;
+}
+export interface StudyCard {
+  id: string;
+  deckId: string;
+  front: string;
+  back: string;
+  createdAt: number;
+}
+export interface DeckData {
+  decks: StudyDeck[];
+  cards: StudyCard[];
+}
 
 export interface ImportBundle {
   name: string;
@@ -206,6 +226,20 @@ const devBridge: FileNoteBridge = {
     },
     async save(url, list) {
       localStorage.setItem(`filenote-dev-ann:${url}`, JSON.stringify(list));
+      return true;
+    },
+  },
+  decks: {
+    async get() {
+      try {
+        const d = JSON.parse(localStorage.getItem('filenote-dev-decks') || 'null') as DeckData | null;
+        return d && Array.isArray(d.decks) ? d : { decks: [], cards: [] };
+      } catch {
+        return { decks: [], cards: [] };
+      }
+    },
+    async save(d) {
+      localStorage.setItem('filenote-dev-decks', JSON.stringify(d));
       return true;
     },
   },

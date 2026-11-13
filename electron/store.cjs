@@ -127,6 +127,24 @@ function attachmentPath(urlOrFile) {
   return fs.existsSync(full) ? full : null;
 }
 
+/* ───────── Mazos de tarjetas creados desde «Estudiar» ───────── */
+
+const decksFile = () => path.join(root(), 'decks.json');
+function getDecks() {
+  try {
+    const d = JSON.parse(fs.readFileSync(decksFile(), 'utf8'));
+    return d && Array.isArray(d.decks) && Array.isArray(d.cards) ? d : { decks: [], cards: [] };
+  } catch {
+    return { decks: [], cards: [] };
+  }
+}
+function saveDecks(d) {
+  if (!d || !Array.isArray(d.decks) || !Array.isArray(d.cards)) return false;
+  ensure();
+  writeAtomic(decksFile(), JSON.stringify(d));
+  return true;
+}
+
 /* ───────── Repaso (tarjetas de estudio) ───────── */
 
 const studyFile = () => path.join(root(), 'study.json');
@@ -170,4 +188,4 @@ function saveAnnotations(url, list) {
   return true;
 }
 
-module.exports = { getAnnotations, saveAnnotations, getStudy, saveStudy, list, get, save, remove, listFolders, saveFolders, saveAttachment, copyAttachment, attachmentPath, root };
+module.exports = { getDecks, saveDecks, getAnnotations, saveAnnotations, getStudy, saveStudy, list, get, save, remove, listFolders, saveFolders, saveAttachment, copyAttachment, attachmentPath, root };

@@ -19,6 +19,10 @@ contextBridge.exposeInMainWorld('filenote', {
     get: (url) => inv('fn:ann:get', String(url)),
     save: (url, list) => inv('fn:ann:save', String(url), list),
   },
+  decks: {
+    get: () => inv('fn:decks:get'),
+    save: (d) => inv('fn:decks:save', d),
+  },
   study: {
     get: () => inv('fn:study:get'),
     save: (d) => inv('fn:study:save', d),

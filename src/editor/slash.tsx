@@ -63,7 +63,7 @@ function items(query: string): SlashItem[] {
     { id: 'code', label: t('tb.codeBlock'), icon: <SquareDashedBottomCode size={I} />, keys: 'code codigo block', run: (e) => e.chain().focus().toggleCodeBlock().run() },
     { id: 'math', label: t('math.inline'), icon: <Sigma size={I} />, keys: 'math formula ecuacion formula latex matematicas', run: (e) => openMath({ latex: '', block: false, pos: null, editor: e }) },
     { id: 'mathb', label: t('math.blockItem'), icon: <Sigma size={I} />, keys: 'math formula ecuacion bloque latex display', run: (e) => openMath({ latex: '', block: true, pos: null, editor: e }) },
-    { id: 'card', label: t('study.slash'), icon: <Layers size={I} />, keys: 'flashcard tarjeta estudio estudiar anki pregunta card', run: (e) => e.chain().focus().insertContent(t('study.slashText')).run() },
+    { id: 'card', label: t('study.slash'), icon: <Layers size={I} />, keys: 'flashcard tarjeta estudio estudiar anki pregunta card', run: () => useStore.getState().setView({ kind: 'study' }) },
     { id: 'rule', label: t('tb.rule'), icon: <Minus size={I} />, keys: 'divider line separador linea hr', run: (e) => e.chain().focus().setHorizontalRule().run() },
     { id: 'draw', label: t('tb.draw'), icon: <PenTool size={I} />, keys: 'draw dibujo sketch pen lapiz', run: (e) => insertBlock(e, { type: 'drawing', attrs: { autoOpen: true } }) },
     { id: 'file', label: t('tb.attach'), icon: <Paperclip size={I} />, keys: 'image imagen file archivo attach adjuntar foto pdf', run: (e) => void attachFiles(e) },
