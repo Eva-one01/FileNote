@@ -20,6 +20,8 @@ export interface Note {
   template?: boolean;
   /** Nota del día (AAAA-MM-DD). */
   daily?: string;
+  /** Nota de reunión de un evento de Clipsy («clipsy:<evento>:<fecha>»). */
+  source?: string;
 }
 
 /** Lo que se lista sin abrir la nota (todo menos el documento). */

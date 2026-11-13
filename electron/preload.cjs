@@ -72,6 +72,10 @@ contextBridge.exposeInMainWorld('filenote', {
       return () => ipcRenderer.removeListener('fn:event', h);
     },
   },
+  ready: () => ipcRenderer.send('fn:ready'),
+  clipsy: {
+    send: (p) => inv('fn:clipsy:send', p),
+  },
   capture: {
     done: (id) => ipcRenderer.send('fn:cap:done', id ? String(id) : null),
     close: () => ipcRenderer.send('fn:cap:close'),

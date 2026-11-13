@@ -510,3 +510,14 @@ html.capture-mode, html.capture-mode body { background: transparent; }
 .c-yellow.swatch { background: #f8cf3c; } .c-green.swatch { background: #46c878; } .c-blue.swatch { background: #5a96ff; } .c-pink.swatch { background: #ff6eaa; }
 .swatch:hover { transform: scale(1.15); }
 @media (max-width: 980px) { .pdf-body { grid-template-columns: 1fr; } .pdf-side { display: none; } }
+
+/* Enviar a Clipsy */
+.clipsy-dialog { width: min(460px, calc(100vw - 32px)); }
+.cl-badge { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+.clipsy-dialog .seg button { justify-content: center; }
+.cl-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.math-chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.cl-date { width: 150px; height: 32px; padding: 0 8px; font-size: 13px; }
+.cl-time { width: 100px; height: 32px; padding: 0 8px; font-size: 13px; }
+.task-row .tr-send { margin-left: auto; opacity: 0; width: 28px; height: 28px; flex: none; transition: opacity var(--fast); }
+.task-row:hover .tr-send, .task-row .tr-send:focus-visible { opacity: 1; }
