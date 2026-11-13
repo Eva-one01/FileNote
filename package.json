@@ -1,7 +1,7 @@
 {
   "name": "filenote",
   "productName": "FileNote",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "FileNote — notas de la suite Razor",
   "author": "Felipe Franco",
   "private": true,

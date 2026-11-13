@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UpdateBanner } from '@/components/UpdateBanner';
+import { TitleBarUpdate, UpdateBanner } from '@/components/UpdateBanner';
 import { CommandPalette } from './components/CommandPalette';
 import { NoteEditor } from './components/NoteEditor';
 import { NoteList } from './components/NoteList';
@@ -104,7 +104,11 @@ export function App() {
   if (!ready) return <div style={{ height: '100%', background: 'var(--bg)' }} />;
   return (
     <>
-      {isDesktop ? <div className="titlebar" /> : null}
+      {isDesktop ? (
+        <div className={`titlebar${api.platform === 'win32' ? ' win' : ''}`} style={{ '--titlebar': '34px' } as React.CSSProperties}>
+          <TitleBarUpdate />
+        </div>
+      ) : null}
       <div className={`app${focus ? ' focus' : ''}`} style={isDesktop ? ({ '--titlebar': '34px' } as React.CSSProperties) : undefined}>
         <Sidebar onSettings={() => setSettings(true)} />
         <NoteList />

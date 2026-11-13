@@ -152,7 +152,7 @@ function About() {
   const line = !asked || !st ? '' : st.status === 'checking' ? t('upd.checking') : st.status === 'none' ? t('upd.none') : st.status === 'error' ? t('upd.error') : st.status === 'disabled' ? t('upd.disabled') : st.status === 'downloading' ? t('upd.downloading', { v: st.version ?? '', p: st.progress ?? 0 }) : st.status === 'ready' ? t('upd.ready', { v: st.version ?? '' }) : st.status === 'available' ? t('upd.available', { v: st.version ?? '' }) : '';
   return (
     <div className="set-section">
-      <h4>{t('set.about')}</h4>
+      <h4>{t('upd.section')}</h4>
       <p className="set-hint">FileNote · {t('set.version', { v: version || st?.current || '' })}</p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <button
@@ -168,10 +168,13 @@ function About() {
         {line ? <span className="set-hint" style={{ margin: 0 }}>{line}</span> : null}
         {asked && st && (st.status === 'ready' || st.status === 'available') ? (
           <button className="btn btn-primary btn-sm" onClick={() => u.install()}>
-            {st.status === 'ready' ? t('upd.install') : t('upd.download')}
+            {st.status === 'ready' ? t('upd.restart') : t('upd.download')}
           </button>
         ) : null}
       </div>
+      <p className="set-hint" style={{ marginTop: 10, marginBottom: 0 }}>
+        {t('upd.dataNote')}
+      </p>
     </div>
   );
 }
