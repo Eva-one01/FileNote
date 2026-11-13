@@ -1,0 +1,49 @@
+{
+  "name": "filenote",
+  "productName": "FileNote",
+  "version": "0.1.0",
+  "description": "FileNote — notas de la suite Razor",
+  "author": "Felipe Franco",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit -p .",
+    "electron": "electron .",
+    "dist:win": "vite build && electron-builder --win",
+    "dist:mac": "vite build && electron-builder --mac"
+  },
+  "dependencies": {
+    "@sentry/electron": "8.3.0",
+    "electron-updater": "6.6.2"
+  },
+  "devDependencies": {
+    "@tiptap/core": "3.33.1",
+    "@tiptap/extension-highlight": "3.33.1",
+    "@tiptap/extension-image": "3.33.1",
+    "@tiptap/extension-placeholder": "3.33.1",
+    "@tiptap/extension-table": "3.33.1",
+    "@tiptap/extension-task-item": "3.33.1",
+    "@tiptap/extension-task-list": "3.33.1",
+    "@tiptap/pm": "3.33.1",
+    "@tiptap/react": "3.33.1",
+    "@tiptap/starter-kit": "3.33.1",
+    "@tiptap/suggestion": "3.33.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "docx": "9.15.3",
+    "electron": "45.2.0",
+    "electron-builder": "26.15.3",
+    "lucide-react": "1.72.0",
+    "minisearch": "7.2.0",
+    "perfect-freehand": "1.2.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.8",
+    "zustand": "5.1.0"
+  }
+}
