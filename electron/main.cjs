@@ -26,7 +26,6 @@ const updater = require('./updater.cjs');
 const backups = require('./backups.cjs');
 const prefs = require('./prefs.cjs');
 const importer = require('./importer.cjs');
-const links = require('./links.cjs');
 const DIST = path.join(__dirname, '..', 'dist');
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
@@ -39,16 +38,7 @@ let quitting = false;
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  // Enlaces filenote:// (desde Clipsy): en Windows llegan como argumento de otra instancia; en Mac, con open-url.
-  app.on('second-instance', (_e, argv) => {
-    const link = argv.find(links.isLink);
-    if (link) handleLink(link);
-    else showMain();
-  });
-  app.on('open-url', (e, url) => {
-    e.preventDefault();
-    handleLink(url);
-  });
+  app.on('second-instance', () => showMain());
   app.whenReady().then(start);
 }
 
@@ -152,10 +142,6 @@ function createWindow() {
   });
   win.on('closed', () => {
     win = null;
-    rendererReady = false;
-  });
-  win.webContents.on('did-start-loading', () => {
-    rendererReady = false;
   });
   guardNavigation(win);
 }
@@ -166,25 +152,6 @@ function showMain() {
   win.show();
   win.focus();
   updater.checkIfStale();
-}
-
-const pendingLinks = [];
-let rendererReady = false;
-function handleLink(raw) {
-  const ev = links.parse(raw);
-  if (!ev) return;
-  pendingLinks.push(ev);
-  flushLinks();
-}
-function flushLinks() {
-  if (!pendingLinks.length) return;
-  if (!win || win.isDestroyed()) {
-    if (app.isReady()) createWindow();
-    return;
-  }
-  showMain();
-  if (!rendererReady) return;
-  for (const ev of pendingLinks.splice(0)) sendMain(ev);
 }
 
 function sendMain(ev) {
@@ -401,11 +368,6 @@ function registerIpc() {
   ipcMain.handle('fn:bak:restore', (_e, name) => backups.restore(name));
   ipcMain.handle('fn:bak:open', () => backups.openFolder());
 
-  ipcMain.on('fn:ready', () => {
-    rendererReady = true;
-    flushLinks();
-  });
-  ipcMain.handle('fn:clipsy:send', (_e, p) => links.sendToClipsy(p));
   ipcMain.on('fn:cap:done', (_e, id) => {
     if (capWin && !capWin.isDestroyed()) capWin.hide();
     sendMain({ type: 'notes-changed', ...(id ? { select: String(id) } : {}) });
@@ -442,14 +404,13 @@ function mimeOf(p) {
 }
 
 function start() {
-  if (app.isPackaged) app.setAsDefaultProtocolClient('filenote');
+  // Las versiones 1.5 registraban los enlaces filenote://: FileNote ya no los usa.
+  if (app.isPackaged) app.removeAsDefaultProtocolClient('filenote');
   registerProtocol();
   registerIpc();
   createWindow();
   registerCapture();
   buildTray();
-  const firstLink = process.argv.find(links.isLink);
-  if (firstLink) handleLink(firstLink);
   backups.start();
   updater.init(
     (st) => {

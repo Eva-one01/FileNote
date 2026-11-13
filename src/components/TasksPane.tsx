@@ -1,5 +1,4 @@
-import { CalendarPlus, CheckCircle2, ChevronRight, ListChecks, Search } from 'lucide-react';
-import { canSendToClipsy, sendToClipsy } from './SendToClipsy';
+import { CheckCircle2, ChevronRight, ListChecks, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { JSONContent } from '@tiptap/core';
 import { api } from '@/lib/api';
@@ -111,19 +110,6 @@ export function TasksPane() {
                   <label key={x.index} className={`task-row${x.checked ? ' done' : ''}`} style={{ paddingLeft: 12 + x.depth * 22 }}>
                     <input type="checkbox" checked={x.checked} onChange={() => void toggle(g, x)} />
                     <span>{x.text}</span>
-                    {canSendToClipsy() && !x.checked ? (
-                      <button
-                        className="icon-btn tr-send"
-                        title={t('cl.title')}
-                        aria-label={t('cl.title')}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          sendToClipsy({ title: x.text, noteId: g.id, noteTitle: g.title });
-                        }}
-                      >
-                        <CalendarPlus size={15} />
-                      </button>
-                    ) : null}
                   </label>
                 ))}
               </div>

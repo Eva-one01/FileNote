@@ -4,7 +4,6 @@ import { CommandPalette } from './components/CommandPalette';
 import { Tour } from './components/Tour';
 import { MathDialog } from './editor/math';
 import { PdfViewer } from './editor/PdfViewer';
-import { SendToClipsy } from './components/SendToClipsy';
 import { GraphPane } from './components/GraphPane';
 import { TasksPane } from './components/TasksPane';
 import { StudyPane } from './components/StudyPane';
@@ -82,14 +81,12 @@ export function App() {
   useAppearance();
 
   useEffect(() => {
-    void useStore.getState().load().then(() => api.ready?.());
+    void useStore.getState().load();
     // Avisos del proceso principal: nota guardada desde la captura rápida, «Nota de hoy» desde la bandeja…
     const off = api.events?.on((ev) => {
       if (ev.type === 'notes-changed') void useStore.getState().refresh(ev.select);
       else if (ev.type === 'daily') void useStore.getState().openDaily();
       else if (ev.type === 'new-note') void useStore.getState().createNote();
-      else if (ev.type === 'open-note') void useStore.getState().select(ev.id);
-      else if (ev.type === 'meeting') void useStore.getState().openMeeting(ev);
     });
     // Guardar lo pendiente al cerrar la ventana.
     const flush = () => void useStore.getState().flush();
@@ -162,7 +159,6 @@ export function App() {
       <Tour />
       <MathDialog />
       <PdfViewer />
-      <SendToClipsy />
       <DialogHost />
       <MenuHost />
       <Toast />

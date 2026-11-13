@@ -50,10 +50,6 @@ export interface FileNoteBridge {
     pick(kind: 'folder' | 'files'): Promise<ImportBundle | null>;
     asset(rel: string): Promise<{ url: string; name: string; size: number; mime: string } | null>;
   };
-  /** La ventana ya escucha avisos (enlaces filenote:// pendientes). */
-  ready?(): void;
-  /** Enviar una tarea o un recordatorio a Clipsy. */
-  clipsy?: { send(p: ClipsyPayload): Promise<'sent' | 'missing' | 'invalid'> };
   /** Ventana de captura rápida. */
   capture?: { done(id: string | null): void; close(): void };
   /** Preferencias que lee el proceso principal (atajo global, bandeja). */
@@ -129,10 +125,7 @@ export interface ImportBundle {
 export type AppEvent =
   | { type: 'notes-changed'; select?: string }
   | { type: 'daily' }
-  | { type: 'new-note' }
-  | { type: 'open-note'; id: string }
-  | { type: 'meeting'; title: string; event: string; date: string; start: string; end: string };
-export type ClipsyPayload = { kind: 'task'; title: string; date?: string; time?: string; noteId?: string; noteTitle?: string } | { kind: 'reminder'; title: string; at: number };
+  | { type: 'new-note' };
 export interface DesktopPrefs {
   capture: boolean;
   captureKey: string;

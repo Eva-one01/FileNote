@@ -37,13 +37,11 @@ import {
   FileSymlink,
   LayoutTemplate,
   Sigma,
-  CalendarPlus,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { attachFiles, buildExtensions, insertBlock, insertFiles } from '@/editor/extensions';
 import { TableBar, TableButton } from './TableTools';
 import { openMath, setActiveEditor } from '@/editor/math';
-import { canSendToClipsy, sendToClipsy } from './SendToClipsy';
 import { allTemplates } from '@/lib/templates';
 import { NodeSelection } from '@tiptap/pm/state';
 import { exportNote } from '@/lib/export';
@@ -205,20 +203,6 @@ export function noteMenu(note: Pick<Note, 'id' | 'pinned' | 'folderId' | 'title'
     { label: note.pinned ? t('menu.unpin') : t('menu.pin'), icon: note.pinned ? <PinOff size={16} /> : <Pin size={16} />, onClick: () => void st.patchNote(note.id, { pinned: !note.pinned }) },
     { label: t('menu.move'), icon: <Folder size={16} />, children: folderItems },
     { label: t('menu.duplicate'), icon: <CopyPlus size={16} />, onClick: () => void st.duplicate(note.id) },
-    ...(canSendToClipsy()
-      ? [
-          {
-            label: t('cl.title'),
-            icon: <CalendarPlus size={16} />,
-            onClick: () => {
-              // Lo seleccionado o la línea donde está el cursor (si no, el título de la nota).
-              const sel = editor?.state.selection;
-              const picked = sel && !sel.empty ? editor!.state.doc.textBetween(sel.from, sel.to, ' ') : (sel?.$from.parent.textContent ?? '');
-              sendToClipsy({ title: (picked || note.title || '').slice(0, 300), noteId: note.id, noteTitle: note.title });
-            },
-          },
-        ]
-      : []),
     note.template
       ? { label: t('tpl.use'), icon: <LayoutTemplate size={16} />, onClick: () => void fromTemplate(note.id) }
       : { label: t('tpl.saveAs'), icon: <LayoutTemplate size={16} />, onClick: () => void st.saveAsTemplate(note.id) },

@@ -82,10 +82,8 @@ interface State {
   refresh(select?: string): Promise<void>;
   setView(v: View): void;
   select(id: string | null): Promise<void>;
-  createNote(opts?: { title?: string; folderId?: string | null; tags?: string[]; select?: boolean; content?: JSONContent; template?: boolean; daily?: string; source?: string }): Promise<Note>;
+  createNote(opts?: { title?: string; folderId?: string | null; tags?: string[]; select?: boolean; content?: JSONContent; template?: boolean; daily?: string }): Promise<Note>;
   openDaily(): Promise<void>;
-  /** Nota de reunión de un evento de Clipsy: la abre si ya existe o la crea con la plantilla «Reunión». */
-  openMeeting(ev: { title: string; event: string; date: string; start: string; end: string }): Promise<void>;
   /** Guarda el documento de una nota sin abrirla (vista Tareas). */
   saveContent(id: string, content: JSONContent): Promise<void>;
   newFromTemplate(tpl: Template): Promise<void>;
@@ -200,7 +198,6 @@ export const useStore = create<State>((set, get) => ({
       trashedAt: null,
       ...(opts.template ?? v.kind === 'templates' ? { template: true } : {}),
       ...(opts.daily ? { daily: opts.daily } : {}),
-      ...(opts.source ? { source: opts.source } : {}),
     };
     await api.notes.save(note);
     set((s) => ({ notes: [toMeta(note), ...s.notes], ...(opts.select === false ? {} : { selectedId: note.id, current: note }) }));
@@ -231,24 +228,6 @@ export const useStore = create<State>((set, get) => ({
     await get().createNote({ title: longDate(new Date(), lang), folderId: folder.id, tags: [], content: fillTokens(await tpl.content(), lang), daily: key, template: false });
   },
 
-  async openMeeting(ev) {
-    const key = `clipsy:${ev.event}:${ev.date}`;
-    const found = get().notes.find((n) => n.source === key && !n.trashedAt);
-    if (found) return get().select(found.id);
-    const lang = get().settings.language;
-    const when = ev.date ? new Date(`${ev.date}T${ev.start || '12:00'}`) : null;
-    const dateText = when ? longDate(when, lang) : '';
-    const timeText = ev.start ? (ev.end ? `${ev.start}–${ev.end}` : ev.start) : '';
-    const tpl = builtinTemplate('meeting', lang);
-    const body = fillTokens(await tpl.content(), lang);
-    const head: JSONContent = { type: 'paragraph', content: [{ type: 'text', marks: [{ type: 'italic' }], text: [dateText, timeText].filter(Boolean).join(' · ') + ' — Clipsy' }] };
-    // Carpeta «Reuniones» (la crea si no existe).
-    const fname = translate(lang, 'ob.f.work1');
-    const folder = get().folders.find((f) => f.name === fname) ?? (await get().addFolder(fname));
-    if (get().view.kind !== 'all' && get().view.kind !== 'folder') set({ view: { kind: 'all' } });
-    await get().createNote({ title: ev.title, folderId: folder.id, tags: [], content: { type: 'doc', content: [head, ...(body.content ?? [])] }, source: key, template: false });
-  },
-
   async newFromTemplate(tpl) {
     const lang = get().settings.language;
     const content = fillTokens(await tpl.content(), lang);
@@ -263,7 +242,7 @@ export const useStore = create<State>((set, get) => ({
     const n = await api.notes.get(id);
     if (!n) return;
     const now = Date.now();
-    const copy: Note = { ...n, id: uid(), template: true, pinned: false, daily: undefined, source: undefined, folderId: null, createdAt: now, updatedAt: now, trashedAt: null };
+    const copy: Note = { ...n, id: uid(), template: true, pinned: false, daily: undefined, folderId: null, createdAt: now, updatedAt: now, trashedAt: null };
     await api.notes.save(copy);
     set((s) => ({ notes: [toMeta(copy), ...s.notes] }));
     get().showToast(translate(get().settings.language, 'tpl.saved'), { label: translate(get().settings.language, 'tpl.view'), run: () => {
@@ -325,7 +304,7 @@ export const useStore = create<State>((set, get) => ({
     const n = await api.notes.get(id);
     if (!n) return;
     const now = Date.now();
-    const copy: Note = { ...n, id: uid(), title: n.title ? `${n.title} (2)` : '', pinned: false, daily: undefined, source: undefined, createdAt: now, updatedAt: now, trashedAt: null };
+    const copy: Note = { ...n, id: uid(), title: n.title ? `${n.title} (2)` : '', pinned: false, daily: undefined, createdAt: now, updatedAt: now, trashedAt: null };
     await api.notes.save(copy);
     set((s) => ({ notes: [toMeta(copy), ...s.notes], selectedId: copy.id, current: copy }));
   },
@@ -447,7 +426,7 @@ export function allTags(notes: NoteMeta[]): { tag: string; count: number }[] {
   return [...m.entries()].map(([tag, count]) => ({ tag, count })).sort((a, b) => a.tag.localeCompare(b.tag));
 }
 
-/** Color estable por etiqueta (misma paleta de Clipsy). */
+/** Color estable por etiqueta. */
 const TAG_COLORS = ['#7B93FF', '#3CCB8A', '#F2B544', '#FF6B6B', '#B58CFF', '#4FC3D9', '#A0A0A7'];
 export function tagColor(tag: string) {
   let h = 0;

@@ -1,7 +1,7 @@
 {
   "name": "filenote",
   "productName": "FileNote",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "FileNote — notas de la suite Razor",
   "author": "Felipe Franco",
   "private": true,
@@ -128,14 +128,6 @@
       {
         "provider": "generic",
         "url": "https://github.com/Eva-one01/FileNote/releases/latest/download"
-      }
-    ],
-    "protocols": [
-      {
-        "name": "FileNote",
-        "schemes": [
-          "filenote"
-        ]
       }
     ]
   }

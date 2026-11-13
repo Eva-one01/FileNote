@@ -19,7 +19,6 @@ import {
   Quote,
   Sigma,
   Layers,
-  CalendarPlus,
   SquareDashedBottomCode,
   Table2,
 } from 'lucide-react';
@@ -31,7 +30,6 @@ import { useStore } from '@/lib/store';
 import { allTemplates, fillTokens } from '@/lib/templates';
 import { attachFiles, insertBlock } from './extensions';
 import { openMath } from './math';
-import { canSendToClipsy, sendToClipsy } from '@/components/SendToClipsy';
 
 export interface SlashItem {
   id: string;
@@ -76,17 +74,6 @@ function items(query: string): SlashItem[] {
       run: (e) => e.chain().focus().insertContent(fillTokens('{{date}}', lang)).run(),
     },
   ];
-  if (canSendToClipsy())
-    base.push({
-      id: 'clipsy',
-      label: t('cl.title'),
-      icon: <CalendarPlus size={I} />,
-      keys: 'clipsy recordatorio reminder tarea task calendario agenda',
-      run: (e) => {
-        const cur = st.current;
-        sendToClipsy({ title: (e.state.selection.$from.parent.textContent || cur?.title || '').slice(0, 300), noteId: cur?.id, noteTitle: cur?.title });
-      },
-    });
   const tpls: SlashItem[] = allTemplates(st.notes, lang, async (id) => (await api.notes.get(id))?.content).map((tp) => ({
     id: `tpl:${tp.id}`,
     label: tp.name,

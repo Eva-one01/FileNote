@@ -15,7 +15,7 @@ export function useUpdates() {
   return st;
 }
 
-/** Aviso flotante (abajo a la derecha), como en Clipsy: versión nueva, descargando, instalando, actualizada o fallida. */
+/** Aviso flotante (abajo a la derecha): versión nueva, descargando, instalando, actualizada o fallida. */
 export function UpdateBanner() {
   const { t } = useT();
   const update = useUpdates();
