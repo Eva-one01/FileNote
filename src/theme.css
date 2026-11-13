@@ -167,7 +167,10 @@ button { cursor: pointer; }
 
 /* ───────── Editor ───────── */
 .pane { display: flex; flex-direction: column; min-width: 0; background: var(--surface); position: relative; }
-.toolbar { display: flex; align-items: center; gap: 2px; padding: 8px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; min-height: 49px; }
+.toolbar { display: flex; align-items: center; gap: 1px; padding: 8px 12px; border-bottom: 1px solid var(--border); flex-wrap: nowrap; min-height: 49px; overflow-x: auto; scrollbar-width: none; }
+.toolbar::-webkit-scrollbar { display: none; }
+.toolbar .icon-btn { width: 30px; flex: none; }
+.toolbar .btn { flex: none; }
 .toolbar .sep { width: 1px; height: 18px; background: var(--border-strong); margin: 0 6px; }
 .toolbar .spacer { flex: 1; }
 .doc-scroll { flex: 1; overflow-y: auto; }

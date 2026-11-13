@@ -123,7 +123,7 @@ function Toolbar({ editor, note }: { editor: Editor; note: Note }) {
       <span className="sep" />
       <button
         className="btn btn-ghost"
-        style={{ height: 32, padding: '0 10px', gap: 4, minWidth: 112, justifyContent: 'space-between' }}
+        style={{ height: 32, padding: '0 8px', gap: 4 }}
         onMouseDown={(e) => e.preventDefault()}
         onClick={(e) =>
           openMenuAt(e.currentTarget, [
