@@ -47,9 +47,10 @@ if (!app.requestSingleInstanceLock()) {
 // La app no se conecta a ningún servidor desde la ventana (connect-src 'self').
 const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
+  "worker-src 'self' blob:",
   "font-src 'self' data:",
   "media-src 'self' data: blob:",
   "connect-src 'self' data: blob:",
@@ -329,6 +330,10 @@ function registerIpc() {
   ipcMain.handle('fn:notes:remove', (_e, id) => store.remove(id));
   ipcMain.handle('fn:folders:list', () => store.listFolders());
   ipcMain.handle('fn:folders:save', (_e, f) => store.saveFolders(f));
+  ipcMain.handle('fn:study:get', () => store.getStudy());
+  ipcMain.handle('fn:ann:get', (_e, url) => store.getAnnotations(String(url)));
+  ipcMain.handle('fn:ann:save', (_e, url, list) => store.saveAnnotations(String(url), list));
+  ipcMain.handle('fn:study:save', (_e, d) => store.saveStudy(d));
 
   ipcMain.handle('fn:att:save', (_e, name, mime, data) => store.saveAttachment(name, mime, data));
   ipcMain.handle('fn:att:pick', async () => {

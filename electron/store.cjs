@@ -127,4 +127,47 @@ function attachmentPath(urlOrFile) {
   return fs.existsSync(full) ? full : null;
 }
 
-module.exports = { list, get, save, remove, listFolders, saveFolders, saveAttachment, copyAttachment, attachmentPath, root };
+/* ───────── Repaso (tarjetas de estudio) ───────── */
+
+const studyFile = () => path.join(root(), 'study.json');
+function getStudy() {
+  try {
+    const d = JSON.parse(fs.readFileSync(studyFile(), 'utf8'));
+    return d && typeof d === 'object' ? d : {};
+  } catch {
+    return {};
+  }
+}
+function saveStudy(d) {
+  if (!d || typeof d !== 'object') return false;
+  ensure();
+  writeAtomic(studyFile(), JSON.stringify(d));
+  return true;
+}
+
+/* ───────── Anotaciones de PDF (una por adjunto) ───────── */
+
+const annDir = () => path.join(root(), 'annotations');
+function annFile(url) {
+  const file = attachmentPath(url);
+  return file ? path.join(annDir(), `${path.basename(file)}.json`) : null;
+}
+function getAnnotations(url) {
+  const f = annFile(url);
+  if (!f) return [];
+  try {
+    const d = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return Array.isArray(d) ? d : [];
+  } catch {
+    return [];
+  }
+}
+function saveAnnotations(url, list) {
+  const f = annFile(url);
+  if (!f || !Array.isArray(list)) return false;
+  fs.mkdirSync(annDir(), { recursive: true });
+  writeAtomic(f, JSON.stringify(list));
+  return true;
+}
+
+module.exports = { getAnnotations, saveAnnotations, getStudy, saveStudy, list, get, save, remove, listFolders, saveFolders, saveAttachment, copyAttachment, attachmentPath, root };

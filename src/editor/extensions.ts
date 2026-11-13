@@ -12,6 +12,8 @@ import { useStore } from '@/lib/store';
 import { Attachment } from './attachment';
 import { Drawing } from './drawing';
 import { NoteLink, noteLinkSuggestionBase } from './noteLink';
+import { Mathematics } from '@tiptap/extension-mathematics';
+import { mathClick } from './math';
 import { SlashCommand } from './slash';
 import { suggestRenderer, type LinkItem } from './SuggestMenu';
 
@@ -48,6 +50,7 @@ export function buildExtensions(placeholder: string, currentId: string | null) {
     Attachment,
     Drawing,
     SlashCommand,
+    Mathematics.configure({ katexOptions: { throwOnError: false }, inlineOptions: { onClick: mathClick(false) }, blockOptions: { onClick: mathClick(true) } }),
     NoteLink.configure({
       suggestion: {
         ...noteLinkSuggestionBase,

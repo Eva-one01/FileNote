@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { TitleBarUpdate, UpdateBanner } from '@/components/UpdateBanner';
 import { CommandPalette } from './components/CommandPalette';
 import { Tour } from './components/Tour';
+import { MathDialog } from './editor/math';
+import { PdfViewer } from './editor/PdfViewer';
 import { GraphPane } from './components/GraphPane';
 import { TasksPane } from './components/TasksPane';
+import { StudyPane } from './components/StudyPane';
 import { NoteEditor } from './components/NoteEditor';
 import { NoteList } from './components/NoteList';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -134,6 +137,8 @@ export function App() {
           <TasksPane />
         ) : view.kind === 'graph' ? (
           <GraphPane />
+        ) : view.kind === 'study' ? (
+          <StudyPane />
         ) : (
           <>
             <NoteList />
@@ -144,6 +149,8 @@ export function App() {
       <CommandPalette />
       <UpdateBanner />
       <Tour />
+      <MathDialog />
+      <PdfViewer />
       <DialogHost />
       <MenuHost />
       <Toast />

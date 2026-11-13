@@ -45,6 +45,7 @@ export function textOf(doc: JSONContent | undefined): string {
     if (!n) return '';
     if (n.type === 'text') return n.text ?? '';
     if (n.type === 'noteLink') return String(n.attrs?.title ?? '');
+    if (n.type === 'inlineMath' || n.type === 'blockMath') return String(n.attrs?.latex ?? '');
     const inner = (n.content ?? []).map(walk).join(n.type === 'doc' || n.type?.endsWith('List') || n.type === 'listItem' || n.type === 'taskItem' || n.type?.startsWith('table') ? '\n' : '');
     return inner;
   };
@@ -171,7 +172,7 @@ export const useStore = create<State>((set, get) => ({
   async select(id) {
     await get().flush();
     // Tareas y Grafo ocupan el sitio del editor: al abrir una nota se vuelve a la lista.
-    if (id && (get().view.kind === 'tasks' || get().view.kind === 'graph')) set({ view: { kind: 'all' } });
+    if (id && (get().view.kind === 'tasks' || get().view.kind === 'graph' || get().view.kind === 'study')) set({ view: { kind: 'all' } });
     if (!id) return set({ selectedId: null, current: null });
     const n = await api.notes.get(id);
     set({ selectedId: id, current: n });
@@ -199,7 +200,7 @@ export const useStore = create<State>((set, get) => ({
     await api.notes.save(note);
     set((s) => ({ notes: [toMeta(note), ...s.notes], ...(opts.select === false ? {} : { selectedId: note.id, current: note }) }));
     // Desde la papelera no se ve la nota nueva: se vuelve a «Todas».
-    if ((v.kind === 'trash' || v.kind === 'tasks' || v.kind === 'graph') && opts.select !== false) set({ view: { kind: 'all' } });
+    if ((v.kind === 'trash' || v.kind === 'tasks' || v.kind === 'graph' || v.kind === 'study') && opts.select !== false) set({ view: { kind: 'all' } });
     return note;
   },
 

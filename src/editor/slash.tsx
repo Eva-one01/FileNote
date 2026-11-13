@@ -17,6 +17,8 @@ import {
   PenTool,
   Pilcrow,
   Quote,
+  Sigma,
+  Layers,
   SquareDashedBottomCode,
   Table2,
 } from 'lucide-react';
@@ -27,6 +29,7 @@ import { translate, type Key } from '@/lib/i18n';
 import { useStore } from '@/lib/store';
 import { allTemplates, fillTokens } from '@/lib/templates';
 import { attachFiles, insertBlock } from './extensions';
+import { openMath } from './math';
 
 export interface SlashItem {
   id: string;
@@ -56,6 +59,9 @@ function items(query: string): SlashItem[] {
     { id: 'table', label: t('tb.table'), icon: <Table2 size={I} />, keys: 'table tabla grid', run: (e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
     { id: 'quote', label: t('tb.quote'), icon: <Quote size={I} />, keys: 'quote cita blockquote', run: (e) => e.chain().focus().toggleBlockquote().run() },
     { id: 'code', label: t('tb.codeBlock'), icon: <SquareDashedBottomCode size={I} />, keys: 'code codigo block', run: (e) => e.chain().focus().toggleCodeBlock().run() },
+    { id: 'math', label: t('math.inline'), icon: <Sigma size={I} />, keys: 'math formula ecuacion formula latex matematicas', run: (e) => openMath({ latex: '', block: false, pos: null, editor: e }) },
+    { id: 'mathb', label: t('math.blockItem'), icon: <Sigma size={I} />, keys: 'math formula ecuacion bloque latex display', run: (e) => openMath({ latex: '', block: true, pos: null, editor: e }) },
+    { id: 'card', label: t('study.slash'), icon: <Layers size={I} />, keys: 'flashcard tarjeta estudio estudiar anki pregunta card', run: (e) => e.chain().focus().insertContent(t('study.slashText')).run() },
     { id: 'rule', label: t('tb.rule'), icon: <Minus size={I} />, keys: 'divider line separador linea hr', run: (e) => e.chain().focus().setHorizontalRule().run() },
     { id: 'draw', label: t('tb.draw'), icon: <PenTool size={I} />, keys: 'draw dibujo sketch pen lapiz', run: (e) => insertBlock(e, { type: 'drawing', attrs: { autoOpen: true } }) },
     { id: 'file', label: t('tb.attach'), icon: <Paperclip size={I} />, keys: 'image imagen file archivo attach adjuntar foto pdf', run: (e) => void attachFiles(e) },

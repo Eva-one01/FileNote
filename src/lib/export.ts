@@ -18,6 +18,7 @@ import {
   type ParagraphChild,
 } from 'docx';
 import { drawingSvg, type Stroke } from '@/editor/drawing';
+import { renderLatex } from '@/editor/math';
 import { api } from './api';
 import { translate } from './i18n';
 import { useStore } from './store';
@@ -92,6 +93,10 @@ function toHtml(n: JSONContent): string {
       return `<div class="drawing">${drawingSvg((n.attrs?.strokes as Stroke[]) ?? [], Number(n.attrs?.height) || 360)}</div>`;
     case 'attachment':
       return `<p class="att">📎 ${esc(String(n.attrs?.name ?? ''))}</p>`;
+    case 'inlineMath':
+      return renderLatex(String(n.attrs?.latex ?? ''), false, 'mathml') ?? `<code>${esc(String(n.attrs?.latex ?? ''))}</code>`;
+    case 'blockMath':
+      return `<div class="math">${renderLatex(String(n.attrs?.latex ?? ''), true, 'mathml') ?? `<code>${esc(String(n.attrs?.latex ?? ''))}</code>`}</div>`;
     default:
       return kids();
   }
@@ -115,6 +120,7 @@ img, .drawing svg { max-width: 100%; height: auto; border-radius: 6px; } .drawin
 table { border-collapse: collapse; width: 100%; margin: 6pt 0; } td, th { border: 1px solid #d6d6d2; padding: 4pt 7pt; text-align: left; vertical-align: top; } th { background: #EEEEEB; }
 .link { color: #2E55E6; font-weight: 800; } .att { color: #5F5F66; }
 hr { border: 0; border-top: 1px solid #d6d6d2; margin: 14pt 0; }
+.math { margin: 8pt 0; text-align: center; } math { font-size: 1.1em; }
 `;
 
 /* ───────── Markdown ───────── */
@@ -124,6 +130,7 @@ function mdInline(nodes: JSONContent[] | undefined): string {
     .map((n) => {
       if (n.type === 'hardBreak') return '  \n';
       if (n.type === 'noteLink') return `[[${noteTitle(String(n.attrs?.id), String(n.attrs?.title ?? ''))}]]`;
+      if (n.type === 'inlineMath') return `$${String(n.attrs?.latex ?? '')}$`;
       if (n.type !== 'text') return mdInline(n.content);
       let s = n.text ?? '';
       const marks = (n.marks ?? []).map((m) => m.type);
@@ -185,6 +192,8 @@ async function toMd(n: JSONContent, depth = 0, ordered?: number): Promise<string
       return '```' + (n.attrs?.language ?? '') + '\n' + (n.content ?? []).map((c) => c.text ?? '').join('') + '\n```\n';
     case 'horizontalRule':
       return '---\n';
+    case 'blockMath':
+      return `$$\n${String(n.attrs?.latex ?? '')}\n$$\n`;
     case 'image':
       return `![${n.attrs?.alt ?? ''}](${await toDataUrl(String(n.attrs?.src ?? ''))})\n`;
     case 'drawing': {
@@ -240,6 +249,7 @@ function runs(nodes: JSONContent[] | undefined): ParagraphChild[] {
   const out: ParagraphChild[] = [];
   for (const n of nodes ?? []) {
     if (n.type === 'hardBreak') out.push(new TextRun({ text: '', break: 1 }));
+    else if (n.type === 'inlineMath') out.push(new TextRun({ text: String(n.attrs?.latex ?? ''), font: 'Cambria Math', italics: true }));
     else if (n.type === 'noteLink') out.push(new TextRun({ text: noteTitle(String(n.attrs?.id), String(n.attrs?.title ?? '')), color: '2E55E6', bold: true }));
     else if (n.type === 'text') {
       const m = (n.marks ?? []).map((x) => x.type);
@@ -303,6 +313,9 @@ async function docxBlocks(list: JSONContent[] | undefined, level = 0, listRef?: 
               .map((l, i) => new TextRun({ text: l, font: 'Consolas', size: 19, break: i ? 1 : 0 })),
           }),
         );
+        break;
+      case 'blockMath':
+        out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(n.attrs?.latex ?? ''), font: 'Cambria Math', italics: true })] }));
         break;
       case 'horizontalRule':
         out.push(new Paragraph({ border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: 'D6D6D2', space: 1 } }, children: [] }));

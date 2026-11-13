@@ -61,4 +61,5 @@ export type View =
   | { kind: 'trash' }
   | { kind: 'templates' }
   | { kind: 'tasks' }
-  | { kind: 'graph' };
+  | { kind: 'graph' }
+  | { kind: 'study' };

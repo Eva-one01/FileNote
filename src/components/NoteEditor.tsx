@@ -36,10 +36,12 @@ import {
   X,
   FileSymlink,
   LayoutTemplate,
+  Sigma,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { attachFiles, buildExtensions, insertBlock, insertFiles } from '@/editor/extensions';
 import { TableBar, TableButton } from './TableTools';
+import { openMath, setActiveEditor } from '@/editor/math';
 import { allTemplates } from '@/lib/templates';
 import { NodeSelection } from '@tiptap/pm/state';
 import { exportNote } from '@/lib/export';
@@ -169,6 +171,8 @@ function Toolbar({ editor, note }: { editor: Editor; note: Note }) {
             { label: t('tb.quote'), icon: <Quote size={16} />, checked: s.quote, onClick: () => c().toggleBlockquote().run() },
             { label: t('tb.codeBlock'), icon: <SquareDashedBottomCode size={16} />, checked: s.codeBlock, onClick: () => c().toggleCodeBlock().run() },
             { label: t('tb.rule'), icon: <Minus size={16} />, onClick: () => afterBlock().setHorizontalRule().run() },
+            { label: t('math.inline'), icon: <Sigma size={16} />, hint: '$$x$$', onClick: () => openMath({ latex: '', block: false, pos: null, editor }) },
+            { label: t('math.blockItem'), icon: <Sigma size={16} />, onClick: () => openMath({ latex: '', block: true, pos: null, editor }) },
           ])
         }
       >
@@ -388,6 +392,10 @@ function EditorFor({ note, lang, spell }: { note: Note; lang: string; spell: boo
   });
   const editorRef = useRef<Editor | null>(null);
   editorRef.current = editor;
+  useEffect(() => {
+    setActiveEditor(editor);
+    return () => setActiveEditor(null);
+  }, [editor]);
   const words = useMemo(() => (note.text.trim() ? note.text.trim().split(/\s+/).length : 0), [note.text]);
 
   if (note.trashedAt)

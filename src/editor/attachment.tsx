@@ -3,6 +3,7 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tip
 import { File, FileArchive, FileAudio, FileSpreadsheet, FileText, FileVideo, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useT } from '@/lib/i18n';
+import { openPdf } from './PdfViewer';
 
 export function formatSize(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -19,14 +20,17 @@ function iconFor(mime: string, name: string): LucideIcon {
   return File;
 }
 
-function AttachmentView({ node, selected }: NodeViewProps) {
+function AttachmentView({ node, selected, editor, getPos }: NodeViewProps) {
   const { t } = useT();
   const { url, name, size, mime } = node.attrs as { url: string; name: string; size: number; mime: string };
   const Icon = iconFor(mime || '', name || '');
+  const isPdf = /pdf/.test(mime || '') || /\.pdf$/i.test(name || '');
+  // Los PDF se abren dentro de FileNote (para leer y subrayar); el resto, con su programa.
+  const open = () => (isPdf ? openPdf({ url, name, editor: editor.isEditable ? editor : null, pos: typeof getPos === 'function' ? (getPos() ?? null) : null }) : void api.attachments.open(url));
   return (
     <NodeViewWrapper data-drag-handle>
       <div
-        onDoubleClick={() => void api.attachments.open(url)}
+        onDoubleClick={open}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -48,8 +52,8 @@ function AttachmentView({ node, selected }: NodeViewProps) {
             {formatSize(size || 0)}
           </span>
         </span>
-        <button className="btn btn-ghost" style={{ height: 32, padding: '0 12px' }} onClick={() => void api.attachments.open(url)}>
-          {t('att.open')}
+        <button className="btn btn-ghost" style={{ height: 32, padding: '0 12px' }} onClick={open}>
+          {isPdf ? t('pdf.read') : t('att.open')}
         </button>
       </div>
     </NodeViewWrapper>

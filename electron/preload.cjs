@@ -15,6 +15,14 @@ contextBridge.exposeInMainWorld('filenote', {
     list: () => inv('fn:folders:list'),
     save: (f) => inv('fn:folders:save', f),
   },
+  annotations: {
+    get: (url) => inv('fn:ann:get', String(url)),
+    save: (url, list) => inv('fn:ann:save', String(url), list),
+  },
+  study: {
+    get: () => inv('fn:study:get'),
+    save: (d) => inv('fn:study:save', d),
+  },
   attachments: {
     save: (name, mime, data) => inv('fn:att:save', String(name), String(mime), data),
     pick: () => inv('fn:att:pick'),

@@ -22,6 +22,8 @@ export interface FileNoteBridge {
     list(): Promise<Folder[]>;
     save(folders: Folder[]): Promise<boolean>;
   };
+  study?: { get(): Promise<StudyData>; save(d: StudyData): Promise<boolean> };
+  annotations?: { get(url: string): Promise<PdfHighlight[]>; save(url: string, list: PdfHighlight[]): Promise<boolean> };
   attachments: {
     /** Guarda los bytes de un archivo (pegado o arrastrado). */
     save(name: string, mime: string, data: ArrayBuffer): Promise<SavedAttachment | null>;
@@ -71,6 +73,28 @@ export interface FileNoteBridge {
     openFolder(): Promise<string>;
   };
 }
+
+/** Resaltado en un PDF: rectángulos relativos a la página (0–1), para cualquier zoom. */
+export interface PdfHighlight {
+  id: string;
+  page: number;
+  rects: { x: number; y: number; w: number; h: number }[];
+  text: string;
+  color: 'yellow' | 'green' | 'blue' | 'pink';
+  comment: string;
+  createdAt: number;
+}
+
+/** Estado de repaso de cada tarjeta (repetición espaciada). */
+export interface CardState {
+  ease: number;
+  interval: number;
+  reps: number;
+  lapses: number;
+  due: number;
+  last: number;
+}
+export type StudyData = Record<string, CardState>;
 
 export interface ImportBundle {
   name: string;
@@ -159,6 +183,32 @@ const devBridge: FileNoteBridge = {
       const d = db();
       d.folders = folders;
       put(d);
+      return true;
+    },
+  },
+  annotations: {
+    async get(url) {
+      try {
+        return JSON.parse(localStorage.getItem(`filenote-dev-ann:${url}`) || '[]') as PdfHighlight[];
+      } catch {
+        return [];
+      }
+    },
+    async save(url, list) {
+      localStorage.setItem(`filenote-dev-ann:${url}`, JSON.stringify(list));
+      return true;
+    },
+  },
+  study: {
+    async get() {
+      try {
+        return JSON.parse(localStorage.getItem('filenote-dev-study') || '{}') as StudyData;
+      } catch {
+        return {};
+      }
+    },
+    async save(d) {
+      localStorage.setItem('filenote-dev-study', JSON.stringify(d));
       return true;
     },
   },
