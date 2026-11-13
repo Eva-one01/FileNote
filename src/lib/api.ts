@@ -40,6 +40,12 @@ export interface FileNoteBridge {
     setTheme(dark: boolean): void;
   };
   app?: { version(): Promise<string> };
+  /** Avisos del proceso principal a la ventana. */
+  events?: { on(cb: (ev: AppEvent) => void): () => void };
+  /** Ventana de captura rápida. */
+  capture?: { done(id: string | null): void; close(): void };
+  /** Preferencias que lee el proceso principal (atajo global, bandeja). */
+  prefs?: { get(): Promise<DesktopPrefs & { keyOk: boolean }>; set(p: Partial<DesktopPrefs>): Promise<DesktopPrefs & { keyOk: boolean }>; lang(l: string): void };
   updates?: {
     get(): Promise<UpdateState>;
     check(): Promise<UpdateState>;
@@ -59,6 +65,13 @@ export interface FileNoteBridge {
     restore(name: string): Promise<boolean>;
     openFolder(): Promise<string>;
   };
+}
+
+export type AppEvent = { type: 'notes-changed'; select?: string } | { type: 'daily' } | { type: 'new-note' };
+export interface DesktopPrefs {
+  capture: boolean;
+  captureKey: string;
+  tray: boolean;
 }
 
 export type UpdateStatus = 'idle' | 'disabled' | 'checking' | 'none' | 'available' | 'downloading' | 'ready' | 'installing' | 'error';

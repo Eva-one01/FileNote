@@ -16,6 +16,10 @@ export interface Note {
   updatedAt: number;
   /** En la papelera desde esta fecha (se borra del todo a los 30 días). */
   trashedAt: number | null;
+  /** Plantilla del usuario: no sale en las listas normales, solo en «Plantillas». */
+  template?: boolean;
+  /** Nota del día (AAAA-MM-DD). */
+  daily?: string;
 }
 
 /** Lo que se lista sin abrir la nota (todo menos el documento). */
@@ -23,6 +27,8 @@ export type NoteMeta = Omit<Note, 'content'>;
 
 export interface Folder {
   id: string;
+  /** Carpeta creada por la app (la de las notas del día). */
+  system?: 'daily';
   name: string;
   parentId: string | null;
   order: number;
@@ -50,4 +56,5 @@ export type View =
   | { kind: 'pinned' }
   | { kind: 'folder'; id: string }
   | { kind: 'tag'; tag: string }
-  | { kind: 'trash' };
+  | { kind: 'trash' }
+  | { kind: 'templates' };

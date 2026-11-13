@@ -12,6 +12,7 @@ import { useStore } from '@/lib/store';
 import { Attachment } from './attachment';
 import { Drawing } from './drawing';
 import { NoteLink, noteLinkSuggestionBase } from './noteLink';
+import { SlashCommand } from './slash';
 import { suggestRenderer, type LinkItem } from './SuggestMenu';
 
 /** Notas que coinciden con lo escrito después de [[ (y, si no hay una igual, «Crear nota …»). */
@@ -19,7 +20,7 @@ function linkItems(query: string, currentId: string | null): LinkItem[] {
   const q = query.trim().toLowerCase();
   const notes = useStore
     .getState()
-    .notes.filter((n) => !n.trashedAt && n.id !== currentId)
+    .notes.filter((n) => !n.trashedAt && !n.template && n.id !== currentId)
     .filter((n) => !q || n.title.toLowerCase().includes(q))
     .sort((a, b) => {
       const as = a.title.toLowerCase().startsWith(q) ? 0 : 1;
@@ -46,6 +47,7 @@ export function buildExtensions(placeholder: string, currentId: string | null) {
     Image.configure({ inline: false, allowBase64: true }),
     Attachment,
     Drawing,
+    SlashCommand,
     NoteLink.configure({
       suggestion: {
         ...noteLinkSuggestionBase,
@@ -92,4 +94,17 @@ export function insertBlock(editor: Editor, content: Content, at?: number) {
   const pos = at ?? (sel instanceof NodeSelection ? sel.to : undefined);
   const chain = editor.chain().focus();
   (pos !== undefined ? chain.insertContentAt(pos, content) : chain.insertContent(content)).run();
+}
+
+/** Elegir imágenes o archivos y adjuntarlos (en el navegador de pruebas usa su propio selector). */
+export async function attachFiles(editor: Editor) {
+  const saved = await api.attachments.pick();
+  if (saved.length) insertSaved(editor, saved);
+  else if (!window.filenote) {
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.multiple = true;
+    inp.onchange = () => void insertFiles(editor, [...(inp.files ?? [])]);
+    inp.click();
+  }
 }

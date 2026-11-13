@@ -11,7 +11,7 @@ import { useT } from './lib/i18n';
 import { useStore } from './lib/store';
 
 /** Tema, color y tamaño de letra en <html> (y el color de la barra de título de la ventana). */
-function useAppearance() {
+export function useAppearance(ownWindow = true) {
   const { theme, accent, size, language } = useStore((s) => s.settings);
   const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
   useEffect(() => {
@@ -27,8 +27,11 @@ function useAppearance() {
     r.dataset.accent = accent;
     r.dataset.size = size;
     r.lang = language;
-    api.window.setTheme(dark);
-  }, [dark, accent, size, language]);
+    if (ownWindow) {
+      api.window.setTheme(dark);
+      api.prefs?.lang(language);
+    }
+  }, [dark, accent, size, language, ownWindow]);
 }
 
 function Toast() {
@@ -65,10 +68,19 @@ export function App() {
 
   useEffect(() => {
     void useStore.getState().load();
+    // Avisos del proceso principal: nota guardada desde la captura rápida, «Nota de hoy» desde la bandeja…
+    const off = api.events?.on((ev) => {
+      if (ev.type === 'notes-changed') void useStore.getState().refresh(ev.select);
+      else if (ev.type === 'daily') void useStore.getState().openDaily();
+      else if (ev.type === 'new-note') void useStore.getState().createNote();
+    });
     // Guardar lo pendiente al cerrar la ventana.
     const flush = () => void useStore.getState().flush();
     window.addEventListener('beforeunload', flush);
-    return () => window.removeEventListener('beforeunload', flush);
+    return () => {
+      window.removeEventListener('beforeunload', flush);
+      off?.();
+    };
   }, []);
 
   // Atajos de teclado de toda la app.
@@ -80,7 +92,10 @@ export function App() {
       if (mod && (k === 'k' || k === 'p') && !e.shiftKey) {
         e.preventDefault();
         st.setPalette(!st.paletteOpen);
-      } else if (mod && k === 'n') {
+      } else if (mod && e.shiftKey && k === 'j') {
+        e.preventDefault();
+        void st.openDaily();
+      } else if (mod && k === 'n' && !e.shiftKey) {
         e.preventDefault();
         void st.createNote();
       } else if (mod && e.shiftKey && k === 'f') {

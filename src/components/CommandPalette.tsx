@@ -61,13 +61,13 @@ export function CommandPalette() {
       extractField: (doc, field) => (field === 'tagsText' ? doc.tags.join(' ') : (doc as unknown as Record<string, string>)[field]),
       searchOptions: { boost: { title: 3, tagsText: 2 }, prefix: true, fuzzy: 0.2, combineWith: 'AND' },
     });
-    ms.addAll(notes.filter((n) => !n.trashedAt));
+    ms.addAll(notes.filter((n) => !n.trashedAt && !n.template));
     return ms;
   }, [open, notes]);
 
   const terms = useMemo(() => fold(q).split(/\s+/).filter(Boolean), [q]);
   const results = useMemo(() => {
-    const live = notes.filter((n) => !n.trashedAt);
+    const live = notes.filter((n) => !n.trashedAt && !n.template);
     if (!q.trim() || !index) return [...live].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 8);
     const byId = new Map(live.map((n) => [n.id, n]));
     return index

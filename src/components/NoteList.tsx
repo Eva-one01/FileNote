@@ -1,4 +1,6 @@
-import { ArrowDownUp, Pin, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowDownUp, FileText, LayoutTemplate, Pin, Plus, Search, Trash2 } from 'lucide-react';
+import { api } from '@/lib/api';
+import { allTemplates } from '@/lib/templates';
 import { useMemo, useState } from 'react';
 import { relTime, useT } from '@/lib/i18n';
 import { sortNotes, tagColor, useStore, visibleNotes } from '@/lib/store';
@@ -23,9 +25,31 @@ export function NoteList() {
         ? t('nav.pinned')
         : view.kind === 'trash'
           ? t('nav.trash')
+          : view.kind === 'templates'
+            ? t('tpl.nav')
           : view.kind === 'tag'
             ? `#${view.tag}`
-            : (folders.find((f) => f.id === view.id)?.name ?? '');
+            : view.kind === 'folder'
+              ? (folders.find((f) => f.id === view.id)?.name ?? '')
+              : '';
+
+  const templateMenu = (el: HTMLElement) => {
+    const st = useStore.getState();
+    const tpls = allTemplates(st.notes, lang, async (id) => (await api.notes.get(id))?.content);
+    const mine = tpls.filter((x) => !x.builtin);
+    const builtin = tpls.filter((x) => x.builtin);
+    openMenuAt(
+      el,
+      [
+        ...mine.map((x) => ({ label: x.name, icon: <FileText size={16} />, onClick: () => void st.newFromTemplate(x) })),
+        ...(mine.length ? [{ sep: true as const }] : []),
+        ...builtin.map((x) => ({ label: x.name, icon: <LayoutTemplate size={16} />, onClick: () => void st.newFromTemplate(x) })),
+        { sep: true as const },
+        { label: t('tpl.manage'), onClick: () => st.setView({ kind: 'templates' }) },
+      ],
+      'right',
+    );
+  };
 
   const sortMenu = (el: HTMLElement) =>
     openMenuAt(
@@ -56,7 +80,12 @@ export function NoteList() {
               <button className="icon-btn" title={t('list.sort')} aria-label={t('list.sort')} onClick={(e) => sortMenu(e.currentTarget)}>
                 <ArrowDownUp size={17} />
               </button>
-              <button className="icon-btn on" title={`${t('list.new')} (Ctrl+N)`} aria-label={t('list.new')} onClick={() => void useStore.getState().createNote()}>
+              {view.kind !== 'templates' ? (
+                <button className="icon-btn" title={t('tpl.newFrom')} aria-label={t('tpl.newFrom')} onClick={(e) => templateMenu(e.currentTarget)}>
+                  <LayoutTemplate size={17} />
+                </button>
+              ) : null}
+              <button className="icon-btn on" title={view.kind === 'templates' ? t('tpl.new') : `${t('list.new')} (Ctrl+N)`} aria-label={view.kind === 'templates' ? t('tpl.new') : t('list.new')} onClick={() => void useStore.getState().createNote()}>
                 <Plus size={19} />
               </button>
             </>
@@ -72,8 +101,9 @@ export function NoteList() {
           <div className="empty">
             <div>
               {view.kind === 'trash' ? <Trash2 size={30} color="var(--text-faint)" /> : null}
-              <h3>{q ? t('pal.none') : view.kind === 'trash' ? t('list.trashEmptyT') : t('list.emptyT')}</h3>
-              <div>{q ? t('list.noMatch', { q }) : view.kind === 'trash' ? t('list.trashNote') : t('list.emptyB')}</div>
+              {view.kind === 'templates' ? <LayoutTemplate size={30} color="var(--text-faint)" /> : null}
+              <h3>{q ? t('pal.none') : view.kind === 'trash' ? t('list.trashEmptyT') : view.kind === 'templates' ? t('tpl.emptyT') : t('list.emptyT')}</h3>
+              <div>{q ? t('list.noMatch', { q }) : view.kind === 'trash' ? t('list.trashNote') : view.kind === 'templates' ? t('tpl.emptyB') : t('list.emptyB')}</div>
             </div>
           </div>
         ) : (

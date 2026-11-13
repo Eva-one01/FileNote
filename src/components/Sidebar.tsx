@@ -1,4 +1,4 @@
-import { ChevronRight, FileText, Folder, FolderOpen, FolderPlus, Hash, Pencil, Pin, Search, Settings2, Trash2 } from 'lucide-react';
+import { CalendarDays, ChevronRight, FileText, LayoutTemplate, Folder, FolderOpen, FolderPlus, Hash, Pencil, Pin, Search, Settings2, Trash2 } from 'lucide-react';
 import { useMemo, useState, type DragEvent } from 'react';
 import { useT } from '@/lib/i18n';
 import { allTags, tagColor, useStore } from '@/lib/store';
@@ -63,7 +63,8 @@ export function Sidebar({ onSettings }: { onSettings: () => void }) {
   const notes = useStore((s) => s.notes);
   const folders = useStore((s) => s.folders);
   const [closed, setClosed] = useState<Set<string>>(new Set());
-  const live = useMemo(() => notes.filter((n) => !n.trashedAt), [notes]);
+  const live = useMemo(() => notes.filter((n) => !n.trashedAt && !n.template), [notes]);
+  const templates = useMemo(() => notes.filter((n) => !n.trashedAt && n.template).length, [notes]);
   const tags = useMemo(() => allTags(notes), [notes]);
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -132,7 +133,7 @@ export function Sidebar({ onSettings }: { onSettings: () => void }) {
               view={{ kind: 'folder', id: f.id }}
               label={f.name}
               count={counts.get(f.id)}
-              icon={kids && !isClosed ? <FolderOpen size={17} /> : <Folder size={17} />}
+              icon={f.system === 'daily' ? <CalendarDays size={17} /> : kids && !isClosed ? <FolderOpen size={17} /> : <Folder size={17} />}
               onContext={folderMenu(f)}
               drop={(id) => void st().patchNote(id, { folderId: f.id })}
               toggle={
@@ -174,6 +175,10 @@ export function Sidebar({ onSettings }: { onSettings: () => void }) {
           <kbd>Ctrl K</kbd>
         </button>
         <NavItem view={{ kind: 'all' }} label={t('nav.all')} count={live.length} icon={<FileText size={17} />} drop={(id) => void st().patchNote(id, { folderId: null })} />
+        <button className="nav-item" onClick={() => void st().openDaily()} title={`${t('daily.open')} (${t('daily.key')})`}>
+          <CalendarDays size={17} />
+          <span className="name">{t('daily.today')}</span>
+        </button>
         <NavItem view={{ kind: 'pinned' }} label={t('nav.pinned')} count={live.filter((n) => n.pinned).length} icon={<Pin size={17} />} drop={(id) => void st().patchNote(id, { pinned: true })} />
 
         <div className="side-section">
@@ -200,6 +205,7 @@ export function Sidebar({ onSettings }: { onSettings: () => void }) {
         </div>
 
         <div className="side-section">
+          <NavItem view={{ kind: 'templates' }} label={t('tpl.nav')} count={templates} icon={<LayoutTemplate size={17} />} />
           <NavItem view={{ kind: 'trash' }} label={t('nav.trash')} count={notes.filter((n) => n.trashedAt).length} icon={<Trash2 size={17} />} drop={(id) => void st().trash(id)} />
         </div>
       </div>

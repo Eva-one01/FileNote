@@ -2,6 +2,8 @@ import type { JSONContent } from '@tiptap/core';
 import { create } from 'zustand';
 import type { Folder, Note, NoteMeta, Settings, View } from '@/types';
 import { api } from './api';
+import { translate } from './i18n';
+import { builtinTemplate, dayKey, fillTokens, longDate, type Template } from './templates';
 
 const SETTINGS_KEY = 'filenote-settings';
 const TRASH_DAYS = 30;
@@ -36,6 +38,20 @@ export function linksIn(doc: JSONContent | undefined): string[] {
   return [...out];
 }
 
+/** Texto plano de un documento (vista previa y búsqueda), con un salto entre bloques. */
+export function textOf(doc: JSONContent | undefined): string {
+  const out: string[] = [];
+  const walk = (n?: JSONContent): string => {
+    if (!n) return '';
+    if (n.type === 'text') return n.text ?? '';
+    if (n.type === 'noteLink') return String(n.attrs?.title ?? '');
+    const inner = (n.content ?? []).map(walk).join(n.type === 'doc' || n.type?.endsWith('List') || n.type === 'listItem' || n.type === 'taskItem' || n.type?.startsWith('table') ? '\n' : '');
+    return inner;
+  };
+  out.push(walk(doc));
+  return out.join('').replace(/\n{3,}/g, '\n\n').trim().slice(0, 20000);
+}
+
 const toMeta = (n: Note): NoteMeta => {
   const { content: _c, ...m } = n;
   return m;
@@ -60,9 +76,14 @@ interface State {
   toast: Toast | null;
 
   load(): Promise<void>;
+  /** Vuelve a leer la lista (p. ej. tras guardar desde la captura rápida); opcionalmente abre una nota. */
+  refresh(select?: string): Promise<void>;
   setView(v: View): void;
   select(id: string | null): Promise<void>;
-  createNote(opts?: { title?: string; folderId?: string | null; tags?: string[]; select?: boolean }): Promise<Note>;
+  createNote(opts?: { title?: string; folderId?: string | null; tags?: string[]; select?: boolean; content?: JSONContent; template?: boolean; daily?: string }): Promise<Note>;
+  openDaily(): Promise<void>;
+  newFromTemplate(tpl: Template): Promise<void>;
+  saveAsTemplate(id: string): Promise<void>;
   updateCurrent(patch: Partial<Pick<Note, 'title' | 'content' | 'text' | 'tags' | 'folderId' | 'pinned'>>): void;
   patchNote(id: string, patch: Partial<Pick<Note, 'title' | 'tags' | 'folderId' | 'pinned' | 'trashedAt'>>): Promise<void>;
   flush(): Promise<void>;
@@ -117,6 +138,15 @@ export const useStore = create<State>((set, get) => ({
     if (first) await get().select(first.id);
   },
 
+  async refresh(selectId) {
+    const notes = await api.notes.list();
+    set({ notes });
+    if (selectId) {
+      if (get().view.kind === 'trash' || get().view.kind === 'templates') set({ view: { kind: 'all' } });
+      await get().select(selectId);
+    }
+  },
+
   setView(v) {
     set({ view: v });
   },
@@ -135,21 +165,68 @@ export const useStore = create<State>((set, get) => ({
     const note: Note = {
       id: uid(),
       title: opts.title ?? '',
-      content: emptyDoc(),
-      text: '',
+      content: opts.content ?? emptyDoc(),
+      text: opts.content ? textOf(opts.content) : '',
       folderId: opts.folderId !== undefined ? opts.folderId : v.kind === 'folder' ? v.id : null,
       tags: opts.tags ?? (v.kind === 'tag' ? [v.tag] : []),
       pinned: v.kind === 'pinned',
-      links: [],
+      links: opts.content ? linksIn(opts.content) : [],
       createdAt: now,
       updatedAt: now,
       trashedAt: null,
+      ...(opts.template ?? v.kind === 'templates' ? { template: true } : {}),
+      ...(opts.daily ? { daily: opts.daily } : {}),
     };
     await api.notes.save(note);
     set((s) => ({ notes: [toMeta(note), ...s.notes], ...(opts.select === false ? {} : { selectedId: note.id, current: note }) }));
     // Desde la papelera no se ve la nota nueva: se vuelve a «Todas».
     if (v.kind === 'trash' && opts.select !== false) set({ view: { kind: 'all' } });
     return note;
+  },
+
+  /** Abre la nota de hoy (o la crea con la plantilla «Diario» en la carpeta del diario). */
+  async openDaily() {
+    const key = dayKey();
+    const found = get().notes.find((n) => n.daily === key && !n.trashedAt);
+    if (found) {
+      if (get().view.kind === 'trash' || get().view.kind === 'templates') set({ view: { kind: 'all' } });
+      return get().select(found.id);
+    }
+    const lang = get().settings.language;
+    let folder = get().folders.find((f) => f.system === 'daily');
+    if (!folder) {
+      folder = await get().addFolder(translate(lang, 'daily.folder'));
+      folder = { ...folder, system: 'daily' };
+      const folders = get().folders.map((f) => (f.id === folder!.id ? folder! : f));
+      set({ folders });
+      await api.folders.save(folders);
+    }
+    const tpl = builtinTemplate('daily', lang);
+    if (get().view.kind === 'trash' || get().view.kind === 'templates') set({ view: { kind: 'all' } });
+    await get().createNote({ title: longDate(new Date(), lang), folderId: folder.id, tags: [], content: fillTokens(await tpl.content(), lang), daily: key, template: false });
+  },
+
+  async newFromTemplate(tpl) {
+    const lang = get().settings.language;
+    const content = fillTokens(await tpl.content(), lang);
+    const title = tpl.builtin ? fillTokens(tpl.title, lang) : tpl.name;
+    if (get().view.kind === 'templates' || get().view.kind === 'trash') set({ view: { kind: 'all' } });
+    await get().createNote({ title, content, template: false });
+  },
+
+  /** Copia la nota como plantilla nueva (la original no cambia). */
+  async saveAsTemplate(id) {
+    await get().flush();
+    const n = await api.notes.get(id);
+    if (!n) return;
+    const now = Date.now();
+    const copy: Note = { ...n, id: uid(), template: true, pinned: false, daily: undefined, folderId: null, createdAt: now, updatedAt: now, trashedAt: null };
+    await api.notes.save(copy);
+    set((s) => ({ notes: [toMeta(copy), ...s.notes] }));
+    get().showToast(translate(get().settings.language, 'tpl.saved'), { label: translate(get().settings.language, 'tpl.view'), run: () => {
+      set({ view: { kind: 'templates' } });
+      void get().select(copy.id);
+    } });
   },
 
   updateCurrent(patch) {
@@ -205,7 +282,7 @@ export const useStore = create<State>((set, get) => ({
     const n = await api.notes.get(id);
     if (!n) return;
     const now = Date.now();
-    const copy: Note = { ...n, id: uid(), title: n.title ? `${n.title} (2)` : '', pinned: false, createdAt: now, updatedAt: now, trashedAt: null };
+    const copy: Note = { ...n, id: uid(), title: n.title ? `${n.title} (2)` : '', pinned: false, daily: undefined, createdAt: now, updatedAt: now, trashedAt: null };
     await api.notes.save(copy);
     set((s) => ({ notes: [toMeta(copy), ...s.notes], selectedId: copy.id, current: copy }));
   },
@@ -279,6 +356,9 @@ export const normalizeTag = (t: string) =>
 
 export function visibleNotes(notes: NoteMeta[], view: View, query: string, folders: Folder[] = []): NoteMeta[] {
   let list = view.kind === 'trash' ? notes.filter((n) => n.trashedAt) : notes.filter((n) => !n.trashedAt);
+  // Las plantillas solo se ven en «Plantillas» (y en la papelera).
+  if (view.kind === 'templates') list = list.filter((n) => n.template);
+  else if (view.kind !== 'trash') list = list.filter((n) => !n.template);
   if (view.kind === 'pinned') list = list.filter((n) => n.pinned);
   if (view.kind === 'tag') list = list.filter((n) => n.tags.includes(view.tag));
   if (view.kind === 'folder') {
@@ -307,7 +387,7 @@ export function sortNotes(list: NoteMeta[], by: Settings['sort']): NoteMeta[] {
 
 export function allTags(notes: NoteMeta[]): { tag: string; count: number }[] {
   const m = new Map<string, number>();
-  for (const n of notes) if (!n.trashedAt) for (const t of n.tags) m.set(t, (m.get(t) ?? 0) + 1);
+  for (const n of notes) if (!n.trashedAt && !n.template) for (const t of n.tags) m.set(t, (m.get(t) ?? 0) + 1);
   return [...m.entries()].map(([tag, count]) => ({ tag, count })).sort((a, b) => a.tag.localeCompare(b.tag));
 }
 

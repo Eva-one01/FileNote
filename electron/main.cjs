@@ -3,7 +3,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 const { pathToFileURL } = require('node:url');
-const { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, protocol, screen, shell } = require('electron');
+const { app, BrowserWindow, Menu, Tray, dialog, globalShortcut, ipcMain, nativeImage, nativeTheme, net, protocol, screen, shell } = require('electron');
 
 const SCHEME = 'app';
 const HOST = 'filenote';
@@ -24,22 +24,20 @@ errors.init();
 const store = require('./store.cjs');
 const updater = require('./updater.cjs');
 const backups = require('./backups.cjs');
+const prefs = require('./prefs.cjs');
 const DIST = path.join(__dirname, '..', 'dist');
 
 protocol.registerSchemesAsPrivileged([{ scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true, stream: true } }]);
 
 let win = null;
+let capWin = null;
+let tray = null;
 let quitting = false;
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
-    if (!win) return;
-    if (win.isMinimized()) win.restore();
-    win.show();
-    win.focus();
-  });
+  app.on('second-instance', () => showMain());
   app.whenReady().then(start);
 }
 
@@ -131,11 +129,151 @@ function createWindow() {
   win.loadURL(`${ORIGIN}/`);
   win.once('ready-to-show', () => win.show());
   win.on('focus', () => updater.checkIfStale());
-  win.on('close', () => {
+  // Con la bandeja activada, cerrar la ventana la esconde (el atajo de captura sigue funcionando).
+  win.on('close', (e) => {
+    if (!quitting && prefs.get().tray && tray && !IS_MAC) {
+      e.preventDefault();
+      win.hide();
+      return;
+    }
     quitting = true;
+  });
+  win.on('closed', () => {
+    win = null;
   });
   guardNavigation(win);
 }
+
+function showMain() {
+  if (!win || win.isDestroyed()) return createWindow();
+  if (win.isMinimized()) win.restore();
+  win.show();
+  win.focus();
+  updater.checkIfStale();
+}
+
+function sendMain(ev) {
+  if (win && !win.isDestroyed()) win.webContents.send('fn:event', ev);
+}
+
+/* ───────── Captura rápida y bandeja ───────── */
+
+function openCapture() {
+  if (capWin && !capWin.isDestroyed()) {
+    capWin.show();
+    capWin.focus();
+    return;
+  }
+  const dark = nativeTheme.shouldUseDarkColors;
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+  capWin = new BrowserWindow({
+    width: 560,
+    height: 340,
+    x: Math.round((width - 560) / 2),
+    y: Math.round(height * 0.22),
+    show: false,
+    frame: false,
+    transparent: !IS_WIN,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    title: 'FileNote',
+    backgroundColor: IS_WIN ? (dark ? '#1A1A1D' : '#FFFFFF') : '#00000000',
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: true },
+  });
+  capWin.loadURL(`${ORIGIN}/?capture=1`);
+  capWin.once('ready-to-show', () => capWin.show());
+  capWin.on('blur', () => {
+    // Si se va a otra ventana sin guardar, se queda abierta (no se pierde lo escrito) pero deja de estar encima.
+    if (capWin && !capWin.isDestroyed()) capWin.setAlwaysOnTop(false);
+  });
+  capWin.on('focus', () => capWin && !capWin.isDestroyed() && capWin.setAlwaysOnTop(true));
+  capWin.on('closed', () => {
+    capWin = null;
+  });
+  guardNavigation(capWin);
+}
+
+let keyOk = true;
+function registerCapture() {
+  globalShortcut.unregisterAll();
+  const p = prefs.get();
+  keyOk = true;
+  if (!p.capture) return;
+  try {
+    keyOk = globalShortcut.register(p.captureKey, openCapture);
+  } catch {
+    keyOk = false;
+  }
+}
+
+function trayIcon() {
+  const img = nativeImage.createFromPath(path.join(__dirname, '..', 'build', IS_MAC ? 'trayTemplate.png' : 'icon.png'));
+  if (IS_MAC) {
+    img.setTemplateImage(true);
+    return img;
+  }
+  return img.resize({ width: 16, height: 16 });
+}
+
+function buildTray() {
+  const want = prefs.get().tray;
+  if (!want) {
+    tray?.destroy();
+    tray = null;
+    return;
+  }
+  if (!tray) {
+    tray = new Tray(trayIcon());
+    tray.setToolTip('FileNote');
+    tray.on('click', () => showMain());
+  }
+  const key = prefs.get().capture ? prefs.get().captureKey.replace('CommandOrControl', IS_MAC ? 'Cmd' : 'Ctrl') : undefined;
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: 'FileNote', click: () => showMain() },
+      { type: 'separator' },
+      { label: trayText('capture'), accelerator: key, registerAccelerator: false, click: () => openCapture() },
+      {
+        label: trayText('new'),
+        click: () => {
+          showMain();
+          sendMain({ type: 'new-note' });
+        },
+      },
+      {
+        label: trayText('daily'),
+        click: () => {
+          showMain();
+          sendMain({ type: 'daily' });
+        },
+      },
+      { type: 'separator' },
+      {
+        label: trayText('quit'),
+        click: () => {
+          quitting = true;
+          app.quit();
+        },
+      },
+    ]),
+  );
+}
+
+/** Textos de la bandeja en el idioma de la app (el que la interfaz le pasa). */
+const TRAY = {
+  es: { capture: 'Captura rápida', new: 'Nueva nota', daily: 'Nota de hoy', quit: 'Salir de FileNote' },
+  en: { capture: 'Quick capture', new: 'New note', daily: 'Today’s note', quit: 'Quit FileNote' },
+  pt: { capture: 'Captura rápida', new: 'Nova nota', daily: 'Nota de hoje', quit: 'Sair do FileNote' },
+  fr: { capture: 'Capture rapide', new: 'Nouvelle note', daily: 'Note du jour', quit: 'Quitter FileNote' },
+  ru: { capture: 'Быстрая заметка', new: 'Новая заметка', daily: 'Заметка на сегодня', quit: 'Выйти из FileNote' },
+  de: { capture: 'Schnellnotiz', new: 'Neue Notiz', daily: 'Heutige Notiz', quit: 'FileNote beenden' },
+};
+let uiLang = 'es';
+const trayText = (k) => (TRAY[uiLang] || TRAY.en)[k];
 
 /** Los enlaces web se abren en el navegador del sistema; la ventana nunca sale de la app. */
 function guardNavigation(w) {
@@ -222,8 +360,29 @@ function registerIpc() {
   ipcMain.handle('fn:bak:restore', (_e, name) => backups.restore(name));
   ipcMain.handle('fn:bak:open', () => backups.openFolder());
 
-  ipcMain.on('fn:theme', (_e, dark) => {
-    if (!win) return;
+  ipcMain.on('fn:cap:done', (_e, id) => {
+    if (capWin && !capWin.isDestroyed()) capWin.hide();
+    sendMain({ type: 'notes-changed', ...(id ? { select: String(id) } : {}) });
+  });
+  ipcMain.on('fn:cap:close', () => {
+    if (capWin && !capWin.isDestroyed()) capWin.hide();
+  });
+  ipcMain.handle('fn:prefs:get', () => ({ ...prefs.get(), keyOk }));
+  ipcMain.handle('fn:prefs:set', (_e, p) => {
+    prefs.set(p);
+    registerCapture();
+    buildTray();
+    return { ...prefs.get(), keyOk };
+  });
+  ipcMain.on('fn:lang', (_e, l) => {
+    if (TRAY[l] && l !== uiLang) {
+      uiLang = l;
+      buildTray();
+    }
+  });
+
+  ipcMain.on('fn:theme', (e, dark) => {
+    if (!win || e.sender !== win.webContents) return;
     win.setBackgroundColor(dark ? BG.dark : BG.light);
     if (IS_WIN) win.setTitleBarOverlay(overlayColors(!!dark));
   });
@@ -238,18 +397,29 @@ function start() {
   registerProtocol();
   registerIpc();
   createWindow();
+  registerCapture();
+  buildTray();
   backups.start();
   updater.init(
     (st) => {
       if (win && !win.isDestroyed()) win.webContents.send('fn:upd:state', st);
     },
     () => {
-      quitting = true;
+      quitting = true; // la ventana no se esconde en la bandeja: se cierra para instalar
+      try {
+        tray?.destroy();
+        tray = null;
+      } catch {}
     },
   );
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-    else win?.show();
+  app.on('activate', () => showMain());
+  // Al apagar o reiniciar el equipo, la ventana se cierra de verdad (no se esconde en la bandeja).
+  const { powerMonitor } = require('electron');
+  powerMonitor.on('shutdown', () => {
+    quitting = true;
+  });
+  win?.on('session-end', () => {
+    quitting = true;
   });
 }
 
@@ -257,6 +427,8 @@ app.on('before-quit', () => {
   quitting = true;
   updater.noteQuit();
 });
+app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('window-all-closed', () => {
-  if (!IS_MAC || quitting) app.quit();
+  // Con la bandeja la app sigue viva (la ventana se escondió); en Mac siempre sigue en el Dock.
+  if (quitting || (!IS_MAC && !(prefs.get().tray && tray))) app.quit();
 });

@@ -1,7 +1,7 @@
 import { FolderOpen, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { api, type AutoBackup } from '@/lib/api';
+import { api, type AutoBackup, type DesktopPrefs } from '@/lib/api';
 import { LANGS, useT } from '@/lib/i18n';
 import { confirmDialog } from './ui';
 import { useUpdates } from './UpdateBanner';
@@ -51,6 +51,56 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
         {label}
       </div>
       {children}
+    </div>
+  );
+}
+
+const KEY_OPTIONS = ['CommandOrControl+Alt+N', 'CommandOrControl+Alt+Space', 'Alt+Shift+N', 'CommandOrControl+Shift+Alt+N'];
+const keyLabel = (k: string) => k.replace('CommandOrControl', api.platform === 'darwin' ? 'Cmd' : 'Ctrl').replace('Alt', api.platform === 'darwin' ? 'Option' : 'Alt').split('+').join(' + ');
+
+function QuickCapture() {
+  const { t } = useT();
+  const p = api.prefs;
+  const [st, setSt] = useState<(DesktopPrefs & { keyOk: boolean }) | null>(null);
+  useEffect(() => {
+    void p?.get().then(setSt);
+  }, [p]);
+  if (!p || !st) return null;
+  const set = async (patch: Partial<DesktopPrefs>) => setSt(await p.set(patch));
+  return (
+    <div className="set-section">
+      <h4>{t('cap.section')}</h4>
+      <p className="set-hint">{t('cap.sectionHint')}</p>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontWeight: 700 }}>
+        <input type="checkbox" checked={st.capture} onChange={(e) => void set({ capture: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--accent)' }} />
+        {t('cap.enable')}
+      </label>
+      {st.capture ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
+          <span className="set-hint" style={{ margin: 0 }}>
+            {t('cap.key')}
+          </span>
+          <select className="input" style={{ width: 'auto', height: 34 }} value={st.captureKey} onChange={(e) => void set({ captureKey: e.target.value })}>
+            {KEY_OPTIONS.map((k) => (
+              <option key={k} value={k}>
+                {keyLabel(k)}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+      {st.capture && !st.keyOk ? (
+        <p className="set-hint" style={{ color: 'var(--danger)', marginTop: 8 }}>
+          {t('cap.taken')}
+        </p>
+      ) : null}
+      <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontWeight: 700, marginTop: 14 }}>
+        <input type="checkbox" checked={st.tray} onChange={(e) => void set({ tray: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--accent)' }} />
+        {t('cap.tray')}
+      </label>
+      <p className="set-hint" style={{ marginTop: 6 }}>
+        {t('cap.trayHint')}
+      </p>
     </div>
   );
 }
@@ -240,6 +290,7 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <input type="checkbox" checked={s.spellcheck} onChange={(e) => set({ spellcheck: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--accent)' }} />
           {t('set.spellcheck')}
         </label>
+        <QuickCapture />
         <Backups />
         <Privacy />
         <About />

@@ -57,4 +57,20 @@ contextBridge.exposeInMainWorld('filenote', {
   window: {
     setTheme: (dark) => ipcRenderer.send('fn:theme', !!dark),
   },
+  events: {
+    on: (cb) => {
+      const h = (_e, ev) => cb(ev);
+      ipcRenderer.on('fn:event', h);
+      return () => ipcRenderer.removeListener('fn:event', h);
+    },
+  },
+  capture: {
+    done: (id) => ipcRenderer.send('fn:cap:done', id ? String(id) : null),
+    close: () => ipcRenderer.send('fn:cap:close'),
+  },
+  prefs: {
+    get: () => inv('fn:prefs:get'),
+    set: (p) => inv('fn:prefs:set', p),
+    lang: (l) => ipcRenderer.send('fn:lang', String(l)),
+  },
 });

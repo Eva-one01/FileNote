@@ -1,7 +1,7 @@
 {
   "name": "filenote",
   "productName": "FileNote",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "FileNote — notas de la suite Razor",
   "author": "Felipe Franco",
   "private": true,
@@ -59,7 +59,9 @@
       "!dist/**/*.map",
       "electron/**/*",
       "build/icon.png",
-      "package.json"
+      "package.json",
+      "build/trayTemplate.png",
+      "build/trayTemplate@2x.png"
     ],
     "asar": true,
     "win": {

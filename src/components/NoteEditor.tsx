@@ -3,7 +3,6 @@ import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import {
   Bold,
   Code,
-  Columns3,
   CopyPlus,
   Download,
   FileCode2,
@@ -29,18 +28,19 @@ import {
   PinOff,
   Quote,
   Redo2,
-  Rows3,
   SquareDashedBottomCode,
   Strikethrough,
-  Table2,
   Trash2,
   Underline,
   Undo2,
   X,
   FileSymlink,
+  LayoutTemplate,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { buildExtensions, insertBlock, insertFiles, insertSaved } from '@/editor/extensions';
+import { attachFiles, buildExtensions, insertBlock, insertFiles } from '@/editor/extensions';
+import { TableBar, TableButton } from './TableTools';
+import { allTemplates } from '@/lib/templates';
 import { NodeSelection } from '@tiptap/pm/state';
 import { exportNote } from '@/lib/export';
 import { api } from '@/lib/api';
@@ -99,19 +99,6 @@ function Toolbar({ editor, note }: { editor: Editor; note: Note }) {
     if (editor.state.selection.empty && !s.link) c().insertContent({ type: 'text', text: url, marks: [{ type: 'link', attrs: { href: url } }] }).run();
     else c().extendMarkRange('link').setLink({ href: url }).run();
   };
-  const attach = async () => {
-    const saved = await api.attachments.pick();
-    if (saved.length) insertSaved(editor, saved);
-    else if (!window.filenote) {
-      // Navegador (pruebas): selector de archivos del propio navegador.
-      const inp = document.createElement('input');
-      inp.type = 'file';
-      inp.multiple = true;
-      inp.onchange = () => void insertFiles(editor, [...(inp.files ?? [])]);
-      inp.click();
-    }
-  };
-
   return (
     <div className="toolbar">
       <Btn title={`${t('tb.undo')} (Ctrl+Z)`} onClick={() => c().undo().run()} disabled={!s.canUndo}>
@@ -131,6 +118,10 @@ function Toolbar({ editor, note }: { editor: Editor; note: Note }) {
             { label: t('tb.h1'), icon: <Heading1 size={16} />, checked: s.h1, hint: 'Ctrl+Alt+1', onClick: () => c().toggleHeading({ level: 1 }).run() },
             { label: t('tb.h2'), icon: <Heading2 size={16} />, checked: s.h2, hint: 'Ctrl+Alt+2', onClick: () => c().toggleHeading({ level: 2 }).run() },
             { label: t('tb.h3'), icon: <Heading3 size={16} />, checked: s.h3, hint: 'Ctrl+Alt+3', onClick: () => c().toggleHeading({ level: 3 }).run() },
+            { sep: true },
+            { label: t('tb.strike'), icon: <Strikethrough size={16} />, checked: s.strike, hint: 'Ctrl+Shift+S', onClick: () => c().toggleStrike().run() },
+            { label: t('tb.code'), icon: <Code size={16} />, checked: s.code, hint: 'Ctrl+E', onClick: () => c().toggleCode().run() },
+            { label: t('tb.noteLink'), icon: <FileSymlink size={16} />, hint: '[[', onClick: () => c().insertContent('[[').run() },
           ])
         }
       >
@@ -147,14 +138,8 @@ function Toolbar({ editor, note }: { editor: Editor; note: Note }) {
       <Btn on={s.underline} title={`${t('tb.underline')} (Ctrl+U)`} onClick={() => c().toggleUnderline().run()}>
         <Underline size={I} />
       </Btn>
-      <Btn on={s.strike} title={`${t('tb.strike')} (Ctrl+Shift+S)`} onClick={() => c().toggleStrike().run()}>
-        <Strikethrough size={I} />
-      </Btn>
       <Btn on={s.highlight} title={`${t('tb.highlight')} (Ctrl+Shift+H)`} onClick={() => c().toggleHighlight().run()}>
         <Highlighter size={I} />
-      </Btn>
-      <Btn on={s.code} title={`${t('tb.code')} (Ctrl+E)`} onClick={() => c().toggleCode().run()}>
-        <Code size={I} />
       </Btn>
       <Btn on={s.link} title={t('tb.link')} onClick={() => void setLink()}>
         <Link2 size={I} />
@@ -170,33 +155,20 @@ function Toolbar({ editor, note }: { editor: Editor; note: Note }) {
         <ListChecks size={I} />
       </Btn>
       <span className="sep" />
-      <Btn title={`${t('tb.noteLink')} ([[)`} onClick={() => c().insertContent('[[').run()}>
-        <FileSymlink size={I} />
-      </Btn>
-      <Btn title={t('tb.attach')} onClick={() => void attach()}>
+      <Btn title={t('tb.attach')} onClick={() => void attachFiles(editor)}>
         <Paperclip size={I} />
       </Btn>
       <Btn title={t('tb.draw')} onClick={() => insertBlock(editor, { type: 'drawing', attrs: { autoOpen: true } })}>
         <PenTool size={I} />
       </Btn>
+      <TableButton editor={editor} title={t('tb.table')} />
       <Btn
         title={t('tb.insert')}
         onClick={(e) =>
           openMenuAt(e.currentTarget, [
             { label: t('tb.quote'), icon: <Quote size={16} />, checked: s.quote, onClick: () => c().toggleBlockquote().run() },
             { label: t('tb.codeBlock'), icon: <SquareDashedBottomCode size={16} />, checked: s.codeBlock, onClick: () => c().toggleCodeBlock().run() },
-            { label: t('tb.table'), icon: <Table2 size={16} />, onClick: () => afterBlock().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
             { label: t('tb.rule'), icon: <Minus size={16} />, onClick: () => afterBlock().setHorizontalRule().run() },
-            ...(s.table
-              ? [
-                  { sep: true },
-                  { label: t('tb.addRow'), icon: <Rows3 size={16} />, onClick: () => c().addRowAfter().run() },
-                  { label: t('tb.addCol'), icon: <Columns3 size={16} />, onClick: () => c().addColumnAfter().run() },
-                  { label: t('tb.delRow'), icon: <Rows3 size={16} />, onClick: () => c().deleteRow().run() },
-                  { label: t('tb.delCol'), icon: <Columns3 size={16} />, onClick: () => c().deleteColumn().run() },
-                  { label: t('tb.delTable'), icon: <X size={16} />, danger: true, onClick: () => c().deleteTable().run() },
-                ]
-              : []),
           ])
         }
       >
@@ -211,7 +183,7 @@ function Toolbar({ editor, note }: { editor: Editor; note: Note }) {
   );
 }
 
-export function noteMenu(note: Pick<Note, 'id' | 'pinned' | 'folderId' | 'title'>, t: ReturnType<typeof useT>['t'], editor?: Editor | null): MenuEntry[] {
+export function noteMenu(note: Pick<Note, 'id' | 'pinned' | 'folderId' | 'title' | 'template'>, t: ReturnType<typeof useT>['t'], editor?: Editor | null): MenuEntry[] {
   const st = useStore.getState();
   const folderItems: MenuEntry[] = [
     { label: t('menu.noFolder'), checked: !note.folderId, onClick: () => void st.patchNote(note.id, { folderId: null }) },
@@ -227,6 +199,9 @@ export function noteMenu(note: Pick<Note, 'id' | 'pinned' | 'folderId' | 'title'
     { label: note.pinned ? t('menu.unpin') : t('menu.pin'), icon: note.pinned ? <PinOff size={16} /> : <Pin size={16} />, onClick: () => void st.patchNote(note.id, { pinned: !note.pinned }) },
     { label: t('menu.move'), icon: <Folder size={16} />, children: folderItems },
     { label: t('menu.duplicate'), icon: <CopyPlus size={16} />, onClick: () => void st.duplicate(note.id) },
+    note.template
+      ? { label: t('tpl.use'), icon: <LayoutTemplate size={16} />, onClick: () => void fromTemplate(note.id) }
+      : { label: t('tpl.saveAs'), icon: <LayoutTemplate size={16} />, onClick: () => void st.saveAsTemplate(note.id) },
     {
       label: t('menu.export'),
       icon: <Download size={16} />,
@@ -239,6 +214,14 @@ export function noteMenu(note: Pick<Note, 'id' | 'pinned' | 'folderId' | 'title'
     { sep: true },
     { label: t('menu.trash'), icon: <Trash2 size={16} />, danger: true, hint: 'Supr', onClick: () => void st.trash(note.id) },
   ];
+}
+
+/** Nueva nota a partir de una plantilla del usuario. */
+async function fromTemplate(id: string) {
+  const st = useStore.getState();
+  await st.flush();
+  const tpl = allTemplates(st.notes, st.settings.language, async (x) => (await api.notes.get(x))?.content).find((x) => x.id === id);
+  if (tpl) await st.newFromTemplate(tpl);
 }
 
 function MoreButton({ note, editor }: { note: Note; editor: Editor }) {
@@ -453,8 +436,18 @@ function EditorFor({ note, lang, spell }: { note: Note; lang: string; spell: boo
               editor.commands.setTextSelection(1);
             }}
           />
+          {note.template ? (
+            <div className="tpl-banner">
+              <LayoutTemplate size={16} />
+              <span>{t('tpl.banner')}</span>
+              <button className="btn btn-primary btn-sm" onClick={() => void fromTemplate(note.id)}>
+                {t('tpl.use')}
+              </button>
+            </div>
+          ) : null}
           <Tags note={note} />
           <EditorContent editor={editor} />
+          {editor ? <TableBar editor={editor} /> : null}
           <Backlinks id={note.id} />
         </div>
       </div>
