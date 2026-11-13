@@ -426,6 +426,10 @@ export const pt: Dict = {
   'study.flip': "Virar",
   'study.flipHint': "Clique ou pressione Espaço para ver a resposta",
   'study.card1': "1 cartão",
+  'exp.title': "Notas",
+  'exp.newNote': "Nova nota aqui",
+  'exp.collapse': "Recolher tudo",
+  'exp.empty': "Crie uma nota ou uma pasta com os botões acima.",
 };
 
 export const fr: Dict = {
@@ -851,6 +855,10 @@ export const fr: Dict = {
   'study.flip': "Retourner",
   'study.flipHint': "Cliquez ou appuyez sur Espace pour voir la réponse",
   'study.card1': "1 carte",
+  'exp.title': "Notes",
+  'exp.newNote': "Nouvelle note ici",
+  'exp.collapse': "Tout replier",
+  'exp.empty': "Créez une note ou un dossier avec les boutons ci-dessus.",
 };
 
 export const ru: Dict = {
@@ -1276,6 +1284,10 @@ export const ru: Dict = {
   'study.flip': "Перевернуть",
   'study.flipHint': "Щёлкните или нажмите Пробел, чтобы увидеть ответ",
   'study.card1': "1 карточка",
+  'exp.title': "Заметки",
+  'exp.newNote': "Новая заметка здесь",
+  'exp.collapse': "Свернуть всё",
+  'exp.empty': "Создайте заметку или папку кнопками выше.",
 };
 
 export const de: Dict = {
@@ -1701,4 +1713,8 @@ export const de: Dict = {
   'study.flip': "Umdrehen",
   'study.flipHint': "Klicke oder drücke die Leertaste für die Antwort",
   'study.card1': "1 Karte",
+  'exp.title': "Notizen",
+  'exp.newNote': "Neue Notiz hier",
+  'exp.collapse': "Alle einklappen",
+  'exp.empty': "Erstelle mit den Schaltflächen oben eine Notiz oder einen Ordner.",
 };

@@ -428,6 +428,10 @@ const es = {
   'study.flip': "Voltear",
   'study.flipHint': "Haz clic o pulsa Espacio para ver la respuesta",
   'study.card1': "1 tarjeta",
+  'exp.title': "Notas",
+  'exp.newNote': "Nueva nota aquí",
+  'exp.collapse': "Contraer todo",
+  'exp.empty': "Crea una nota o una carpeta con los botones de arriba.",
 } as const;
 
 export type Key = keyof typeof es;
@@ -860,6 +864,10 @@ const en: Dict = {
   'study.flip': "Flip",
   'study.flipHint': "Click or press Space to see the answer",
   'study.card1': "1 card",
+  'exp.title': "Notes",
+  'exp.newNote': "New note here",
+  'exp.collapse': "Collapse all",
+  'exp.empty': "Create a note or a folder with the buttons above.",
 };
 
 // Portugués, francés, ruso y alemán: pendientes de traducir antes de publicar (se ve en inglés).

@@ -11,7 +11,7 @@ import { StudyPane } from './components/StudyPane';
 import { NoteEditor } from './components/NoteEditor';
 import { NoteList } from './components/NoteList';
 import { SettingsDialog } from './components/SettingsDialog';
-import { Sidebar } from './components/Sidebar';
+import { SideResize, Sidebar } from './components/Sidebar';
 import { DialogHost, MenuHost } from './components/ui';
 import { api, isDesktop } from './lib/api';
 import { useT } from './lib/i18n';
@@ -71,6 +71,13 @@ export function App() {
   const ready = useStore((s) => s.ready);
   const focus = useStore((s) => s.focus);
   const view = useStore((s) => s.view);
+  const [sideW] = useState(() => {
+    try {
+      return localStorage.getItem('filenote-side-w') || '';
+    } catch {
+      return '';
+    }
+  });
   const [settings, setSettings] = useState(false);
   useAppearance();
 
@@ -134,8 +141,9 @@ export function App() {
           <TitleBarUpdate />
         </div>
       ) : null}
-      <div className={`app${focus ? ' focus' : ''}`} style={isDesktop ? ({ '--titlebar': '34px' } as React.CSSProperties) : undefined}>
+      <div className={`app${focus ? ' focus' : ''}${view.kind === 'all' || view.kind === 'folder' ? ' no-list' : ''}`} style={{ ...(isDesktop ? { '--titlebar': '34px' } : {}), ...(sideW ? { '--side-w': sideW } : {}) } as React.CSSProperties}>
         <Sidebar onSettings={() => setSettings(true)} />
+        {!focus ? <SideResize /> : null}
         {view.kind === 'tasks' ? (
           <TasksPane />
         ) : view.kind === 'graph' ? (

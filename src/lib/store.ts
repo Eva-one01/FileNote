@@ -100,6 +100,8 @@ interface State {
   duplicate(id: string): Promise<void>;
   addFolder(name: string, parentId?: string | null): Promise<Folder>;
   renameFolder(id: string, name: string): Promise<void>;
+  /** Mueve una carpeta dentro de otra (o a la raíz). No permite meterla dentro de sí misma. */
+  moveFolder(id: string, parentId: string | null): Promise<void>;
   deleteFolder(id: string): Promise<void>;
   renameTag(from: string, to: string): Promise<void>;
   setSettings(p: Partial<Settings>): void;
@@ -338,6 +340,15 @@ export const useStore = create<State>((set, get) => ({
 
   async renameFolder(id, name) {
     const folders = get().folders.map((f) => (f.id === id ? { ...f, name: name.trim() } : f));
+    set({ folders });
+    await api.folders.save(folders);
+  },
+
+  async moveFolder(id, parentId) {
+    if (id === parentId) return;
+    // ¿parentId está dentro de id? Entonces no se puede.
+    for (let p = parentId; p; p = get().folders.find((f) => f.id === p)?.parentId ?? null) if (p === id) return;
+    const folders = get().folders.map((f) => (f.id === id ? { ...f, parentId } : f));
     set({ folders });
     await api.folders.save(folders);
   },
