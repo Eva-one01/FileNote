@@ -1,3 +1,4 @@
+import { de, fr, pt, ru } from './i18n-more';
 import { useStore } from './store';
 
 const es = {
@@ -344,7 +345,7 @@ const en: Dict = {
 };
 
 // Portugués, francés, ruso y alemán: pendientes de traducir antes de publicar (se ve en inglés).
-const dicts: Record<string, Dict> = { es, en, pt: {}, fr: {}, ru: {}, de: {} };
+const dicts: Record<string, Dict> = { es, en, pt, fr, ru, de };
 
 export const LANGS = [
   { code: 'es', native: 'Español' },
