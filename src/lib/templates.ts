@@ -18,7 +18,7 @@ const tasks = (n: number): JSONContent => ({ type: 'taskList', content: Array.fr
 const bullets = (n: number): JSONContent => ({ type: 'bulletList', content: Array.from({ length: n }, () => ({ type: 'listItem', content: [P()] })) });
 const doc = (...content: JSONContent[]): JSONContent => ({ type: 'doc', content });
 
-export const BUILTIN_IDS = ['meeting', 'daily', 'project', 'weekly'] as const;
+export const BUILTIN_IDS = ['meeting', 'lecture', 'daily', 'project', 'weekly'] as const;
 export type BuiltinId = (typeof BUILTIN_IDS)[number];
 
 export function builtinTemplate(id: BuiltinId, lang: string): Template {
@@ -26,6 +26,7 @@ export function builtinTemplate(id: BuiltinId, lang: string): Template {
   const name = t(`tpl.${id}` as Key);
   const body: Record<BuiltinId, () => JSONContent> = {
     meeting: () => doc(H(t('tpl.attendees')), bullets(1), H(t('tpl.topics')), bullets(1), H(t('tpl.decisions')), tasks(1)),
+    lecture: () => doc(H(t('tpl.subject')), P(), H(t('tpl.keyIdeas')), bullets(3), H(t('tpl.questions')), bullets(1), H(t('tpl.summary')), P()),
     daily: () => doc(H(t('tpl.priorities')), tasks(3), H(t('tpl.notes')), P(), H(t('tpl.tomorrow')), tasks(1)),
     project: () => doc(H(t('tpl.goal')), P(), H(t('tpl.tasks')), tasks(3), H(t('tpl.resources')), bullets(1), H(t('tpl.notes')), P()),
     weekly: () => doc(H(t('tpl.wentWell')), bullets(1), H(t('tpl.improve')), bullets(1), H(t('tpl.nextWeek')), tasks(3)),

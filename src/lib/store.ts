@@ -16,7 +16,7 @@ const defaultLang = (): Settings['language'] => {
 };
 
 function loadSettings(): Settings {
-  const base: Settings = { theme: 'system', accent: 'blue', size: 'normal', language: defaultLang(), sort: 'updated', spellcheck: true };
+  const base: Settings = { theme: 'system', accent: 'blue', size: 'normal', language: defaultLang(), sort: 'updated', spellcheck: true, onboarded: false };
   try {
     return { ...base, ...(JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') as Partial<Settings>) };
   } catch {
@@ -72,6 +72,7 @@ interface State {
   selectedId: string | null;
   current: Note | null;
   paletteOpen: boolean;
+  tourOpen: boolean;
   focus: boolean;
   toast: Toast | null;
 
@@ -98,6 +99,7 @@ interface State {
   renameTag(from: string, to: string): Promise<void>;
   setSettings(p: Partial<Settings>): void;
   setPalette(open: boolean): void;
+  setTour(open: boolean): void;
   setFocus(on: boolean): void;
   showToast(msg: string, action?: Toast['action']): void;
   hideToast(): void;
@@ -123,6 +125,7 @@ export const useStore = create<State>((set, get) => ({
   selectedId: null,
   current: null,
   paletteOpen: false,
+  tourOpen: false,
   focus: false,
   toast: null,
 
@@ -334,6 +337,10 @@ export const useStore = create<State>((set, get) => ({
 
   setPalette(open) {
     set({ paletteOpen: open });
+  },
+
+  setTour(open) {
+    set({ tourOpen: open });
   },
   setFocus(on) {
     set({ focus: on });

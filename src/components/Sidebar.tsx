@@ -39,11 +39,12 @@ function useDrop(onDrop: (noteId: string) => void) {
   };
 }
 
-function NavItem({ icon, label, count, view, onContext, drop, depth = 0, toggle }: { icon: React.ReactNode; label: string; count?: number; view: View; onContext?: (e: React.MouseEvent) => void; drop?: (id: string) => void; depth?: number; toggle?: React.ReactNode }) {
+function NavItem({ icon, label, count, view, onContext, drop, depth = 0, toggle, tour }: { tour?: string; icon: React.ReactNode; label: string; count?: number; view: View; onContext?: (e: React.MouseEvent) => void; drop?: (id: string) => void; depth?: number; toggle?: React.ReactNode }) {
   const current = useStore((s) => s.view);
   const d = useDrop(drop ?? (() => undefined));
   return (
     <button
+      data-tour={tour}
       className={`nav-item${same(current, view) ? ' on' : ''}${d.over ? ' drop' : ''}`}
       style={{ paddingLeft: 10 + depth * 16 }}
       onClick={() => useStore.getState().setView(view)}
@@ -169,13 +170,13 @@ export function Sidebar({ onSettings }: { onSettings: () => void }) {
         <span className="brand-name">FILENOTE</span>
       </div>
       <div className="side-scroll">
-        <button className="nav-item" onClick={() => st().setPalette(true)} style={{ border: '1px solid var(--border-strong)', marginBottom: 10, background: 'var(--surface)' }}>
+        <button data-tour="search" className="nav-item" onClick={() => st().setPalette(true)} style={{ border: '1px solid var(--border-strong)', marginBottom: 10, background: 'var(--surface)' }}>
           <Search size={17} />
           <span className="name">{t('nav.search')}</span>
           <kbd>Ctrl K</kbd>
         </button>
         <NavItem view={{ kind: 'all' }} label={t('nav.all')} count={live.length} icon={<FileText size={17} />} drop={(id) => void st().patchNote(id, { folderId: null })} />
-        <button className="nav-item" onClick={() => void st().openDaily()} title={`${t('daily.open')} (${t('daily.key')})`}>
+        <button data-tour="today" className="nav-item" onClick={() => void st().openDaily()} title={`${t('daily.open')} (${t('daily.key')})`}>
           <CalendarDays size={17} />
           <span className="name">{t('daily.today')}</span>
         </button>
@@ -205,12 +206,12 @@ export function Sidebar({ onSettings }: { onSettings: () => void }) {
         </div>
 
         <div className="side-section">
-          <NavItem view={{ kind: 'templates' }} label={t('tpl.nav')} count={templates} icon={<LayoutTemplate size={17} />} />
+          <NavItem tour="templates" view={{ kind: 'templates' }} label={t('tpl.nav')} count={templates} icon={<LayoutTemplate size={17} />} />
           <NavItem view={{ kind: 'trash' }} label={t('nav.trash')} count={notes.filter((n) => n.trashedAt).length} icon={<Trash2 size={17} />} drop={(id) => void st().trash(id)} />
         </div>
       </div>
       <div className="side-foot">
-        <button className="nav-item" onClick={onSettings}>
+        <button data-tour="settings" className="nav-item" onClick={onSettings}>
           <Settings2 size={17} />
           <span className="name">{t('nav.settings')}</span>
         </button>

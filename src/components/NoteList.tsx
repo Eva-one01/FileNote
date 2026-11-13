@@ -85,7 +85,7 @@ export function NoteList() {
                   <LayoutTemplate size={17} />
                 </button>
               ) : null}
-              <button className="icon-btn on" title={view.kind === 'templates' ? t('tpl.new') : `${t('list.new')} (Ctrl+N)`} aria-label={view.kind === 'templates' ? t('tpl.new') : t('list.new')} onClick={() => void useStore.getState().createNote()}>
+              <button data-tour="new" className="icon-btn on" title={view.kind === 'templates' ? t('tpl.new') : `${t('list.new')} (Ctrl+N)`} aria-label={view.kind === 'templates' ? t('tpl.new') : t('list.new')} onClick={() => void useStore.getState().createNote()}>
                 <Plus size={19} />
               </button>
             </>

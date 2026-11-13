@@ -100,7 +100,7 @@ function Toolbar({ editor, note }: { editor: Editor; note: Note }) {
     else c().extendMarkRange('link').setLink({ href: url }).run();
   };
   return (
-    <div className="toolbar">
+    <div className="toolbar" data-tour="toolbar">
       <Btn title={`${t('tb.undo')} (Ctrl+Z)`} onClick={() => c().undo().run()} disabled={!s.canUndo}>
         <Undo2 size={I} />
       </Btn>
@@ -446,7 +446,9 @@ function EditorFor({ note, lang, spell }: { note: Note; lang: string; spell: boo
             </div>
           ) : null}
           <Tags note={note} />
-          <EditorContent editor={editor} />
+          <div data-tour="editor">
+            <EditorContent editor={editor} />
+          </div>
           {editor ? <TableBar editor={editor} /> : null}
           <Backlinks id={note.id} />
         </div>

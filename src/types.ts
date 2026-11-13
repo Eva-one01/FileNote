@@ -48,6 +48,8 @@ export interface Settings {
   language: Lang;
   sort: SortBy;
   spellcheck: boolean;
+  /** Ya vio el tutorial de inicio. */
+  onboarded: boolean;
 }
 
 /** Qué se muestra en la lista: todas, fijadas, una carpeta, una etiqueta o la papelera. */

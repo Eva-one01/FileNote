@@ -290,6 +290,19 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
           <input type="checkbox" checked={s.spellcheck} onChange={(e) => set({ spellcheck: e.target.checked })} style={{ width: 18, height: 18, accentColor: 'var(--accent)' }} />
           {t('set.spellcheck')}
         </label>
+        <div className="set-section">
+          <h4>{t('tour.again')}</h4>
+          <p className="set-hint">{t('tour.againB')}</p>
+          <button
+            className="btn btn-soft btn-sm"
+            onClick={() => {
+              onClose();
+              useStore.getState().setTour(true);
+            }}
+          >
+            {t('tour.start')}
+          </button>
+        </div>
         <QuickCapture />
         <Backups />
         <Privacy />

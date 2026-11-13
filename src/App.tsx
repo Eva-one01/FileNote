@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TitleBarUpdate, UpdateBanner } from '@/components/UpdateBanner';
 import { CommandPalette } from './components/CommandPalette';
+import { Tour } from './components/Tour';
 import { NoteEditor } from './components/NoteEditor';
 import { NoteList } from './components/NoteList';
 import { SettingsDialog } from './components/SettingsDialog';
@@ -131,6 +132,7 @@ export function App() {
       </div>
       <CommandPalette />
       <UpdateBanner />
+      <Tour />
       <DialogHost />
       <MenuHost />
       <Toast />
